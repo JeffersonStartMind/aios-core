@@ -4,11 +4,11 @@ Centralized tracking for follow-up tasks, technical debt, and optimization oppor
 
 ## Statistics
 
-- **Total Items**: 16
-- **Active Items**: 14 (2 promoted to stories)
+- **Total Items**: 19
+- **Active Items**: 17 (2 promoted to stories)
 - **Promoted to Stories**: 2
 - **Completed Items**: 0
-- **Last Updated**: 2025-11-16
+- **Last Updated**: 2025-12-05
 
 ## Backlog Items by Priority
 
@@ -113,6 +113,92 @@ Centralized tracking for follow-up tasks, technical debt, and optimization oppor
 ---
 
 ### 🟡 MEDIUM Priority
+
+#### [AIOS-DEVOPS-F1] Improve *create-pr Next Steps UX with PR monitoring option
+- **Source**: User Feedback (Story 3.9 PR #21 - 2025-12-05)
+- **Priority**: 🟡 MEDIUM
+- **Effort**: 2 hours
+- **Status**: 📋 TODO
+- **Assignee**: Framework Developer
+- **Sprint**: Sprint 4
+- **Tags**: `ux`, `devops-agent`, `pr-workflow`, `user-feedback`
+- **Description**: After `*create-pr` completes, the Next Steps section shows options that may appear as manual tasks for non-technical users. Should offer immediate PR monitoring as an actionable option, not just informational links.
+- **Current Behavior**:
+  ```
+  Next Steps
+  1. Review PR at: https://github.com/.../pull/21
+  2. Merge when ready
+  3. Mark Story X as Done
+  ```
+- **Proposed Enhancement**:
+  ```
+  Next Steps
+  1. 📊 Monitor PR Review → type 1 or "*monitor-pr 21"
+  2. 🔗 View PR: https://github.com/.../pull/21
+  3. ✅ After approval, merge and mark story as Done
+  ```
+- **Success Criteria**:
+  - [ ] Add `*monitor-pr {pr-number}` command to @devops
+  - [ ] Update `*create-pr` output to show numbered actionable options
+  - [ ] User can type "1" to immediately start monitoring
+  - [ ] Clear distinction between actions and informational items
+- **Acceptance**: Users can immediately trigger PR monitoring from *create-pr output with a single keystroke
+
+---
+
+#### [AIOS-AGENT-F1] Add *backlog-add command to @devops and @qa agents
+- **Source**: User Feedback (Story 3.9 Review - 2025-12-05)
+- **Priority**: 🟡 MEDIUM
+- **Effort**: 3 hours
+- **Status**: 📋 TODO
+- **Assignee**: Framework Developer
+- **Sprint**: Sprint 4
+- **Tags**: `cross-agent`, `backlog`, `workflow`, `user-feedback`
+- **Description**: During PR review or *pre-push, @devops and @qa often find issues (like Coverage Threshold failures, pre-existing test failures) that are NOT related to the current story. Currently, users must switch to @po to add these as Technical Debt. The `*backlog-add` command should be available directly from @devops and @qa.
+- **Problem Statement**:
+  - @devops finds coverage threshold 66% < 80% during PR review → unrelated to Story 3.9
+  - @qa finds pre-existing test failures → should be tracked as tech debt
+  - Currently requires: exit @devops → activate @po → *backlog-add → return to @devops
+- **Proposed Enhancement**:
+  - Add `*backlog-add` (or `*backlog-debt`) to @devops and @qa agents
+  - Same functionality as @po's *backlog-add
+  - Auto-tags items with source agent (e.g., "Source: @devops PR Review")
+- **Success Criteria**:
+  - [ ] Add `*backlog-add` command to devops.md agent definition
+  - [ ] Add `*backlog-add` command to qa.md agent definition
+  - [ ] Reuse existing po-backlog-add.md task
+  - [ ] Auto-populate source field with agent context
+  - [ ] Test cross-agent backlog item creation
+- **Acceptance**: @devops and @qa can add backlog items without switching to @po
+
+---
+
+#### [AIOS-CI-T1] Fix Coverage Threshold and Pre-existing Test Failures
+- **Source**: Story 3.9 PR #21 Review - @devops (2025-12-05)
+- **Priority**: 🟡 MEDIUM
+- **Effort**: 4 hours
+- **Status**: 📋 TODO
+- **Assignee**: Backend Developer
+- **Sprint**: Sprint 4
+- **Tags**: `technical-debt`, `ci`, `testing`, `coverage`
+- **Description**: CI pipeline fails on coverage threshold (66% < 80%) and has 2 pre-existing failing test suites. This blocks ALL PRs regardless of their specific changes. Issue discovered during Story 3.9 PR review.
+- **Problem Statement**:
+  - Coverage: 66.45% vs 80% threshold
+  - `tests/unit/wizard/ide-config-generator.test.js` - ENOENT error
+  - `tests/installer/v21-path-validation.test.js` - Empty test suite
+  - 1448/1451 tests pass (99.8%), but CI reports failure
+- **Proposed Fix Options**:
+  1. Fix the 2 broken test files
+  2. Adjust coverage threshold to realistic value (70%)
+  3. Exclude broken tests from CI run temporarily
+- **Success Criteria**:
+  - [ ] Fix `ide-config-generator.test.js` ENOENT error
+  - [ ] Remove or fix empty `v21-path-validation.test.js`
+  - [ ] CI pipeline passes without coverage warnings
+  - [ ] All 1451 tests pass (0 failures)
+- **Acceptance**: CI pipeline passes cleanly for all PRs
+
+---
 
 #### [story-6.1.2.5-F1] Update remaining 9 agents with command visibility metadata
 - **Source**: Story 6.1.2.5 Scan (Future Improvements)
