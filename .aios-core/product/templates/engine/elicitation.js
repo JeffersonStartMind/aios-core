@@ -177,6 +177,20 @@ class VariableElicitation {
   }
 
   /**
+   * Check if a variable's requiredIf condition is met
+   * @param {Object} variable - Variable with potential requiredIf condition
+   * @param {Object} values - Current values to check condition against
+   * @returns {boolean} True if variable should be required (condition met or no condition)
+   */
+  isConditionallyRequired(variable, values) {
+    if (!variable.requiredIf) {
+      return variable.required;
+    }
+    // requiredIf is the name of another variable that must be truthy
+    return !!values[variable.requiredIf];
+  }
+
+  /**
    * Elicit values for template variables
    * @param {Array} variables - Template variable definitions
    * @param {Object} context - Pre-provided context values
@@ -199,6 +213,16 @@ class VariableElicitation {
           continue;
         } catch (error) {
           console.warn(`Auto-resolver ${variable.auto} failed: ${error.message}`);
+        }
+      }
+
+      // Check if this is a conditionally required variable that should be skipped
+      // (e.g., userFlows is only needed when includeUIUX=true)
+      if (variable.requiredIf) {
+        const conditionMet = this.isConditionallyRequired(variable, values);
+        if (!conditionMet) {
+          // Skip this variable - its condition is not met
+          continue;
         }
       }
 
@@ -231,7 +255,10 @@ class VariableElicitation {
     const errors = [];
 
     for (const variable of variables) {
-      if (variable.required) {
+      // Check if variable is required (either always or conditionally)
+      const isRequired = this.isConditionallyRequired(variable, values);
+
+      if (isRequired) {
         const value = values[variable.name];
         if (value === undefined || value === null || value === '') {
           errors.push(`Missing required variable: ${variable.name}`);

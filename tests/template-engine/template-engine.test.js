@@ -384,7 +384,8 @@ describe('Template Engine v2.0', () => {
     test('should list templates with info', async () => {
       const templates = await engine.listTemplates();
 
-      expect(templates.length).toBe(7);
+      // 8 supported types: prd, prd-v2, adr, pmdr, dbdr, story, epic, task
+      expect(templates.length).toBe(8);
 
       const adrTemplate = templates.find(t => t.type === 'adr');
       expect(adrTemplate).toBeDefined();

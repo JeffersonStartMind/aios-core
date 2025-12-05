@@ -19,7 +19,7 @@ const { TemplateValidator } = require('./validator');
  * Supported template types
  * @constant {Array<string>}
  */
-const SUPPORTED_TYPES = ['prd', 'adr', 'pmdr', 'dbdr', 'story', 'epic', 'task'];
+const SUPPORTED_TYPES = ['prd', 'prd-v2', 'adr', 'pmdr', 'dbdr', 'story', 'epic', 'task'];
 
 /**
  * TemplateEngine class - Main orchestrator for template generation
@@ -150,6 +150,7 @@ class TemplateEngine {
   resolveOutputPath(templateType, variables) {
     const outputDirs = {
       prd: 'docs/prd',
+      'prd-v2': 'docs/prd',
       adr: 'docs/architecture/decisions',
       pmdr: 'docs/decisions',
       dbdr: 'docs/decisions',

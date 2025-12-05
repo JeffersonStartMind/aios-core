@@ -78,7 +78,13 @@ class TemplateValidator {
       return this.schemas.get(templateType);
     }
 
-    const schemaPath = path.join(this.schemasDir, `${templateType}.schema.json`);
+    // Handle versioned schema aliases (e.g., prd-v2 -> prd-v2.schema.json)
+    const schemaAliases = {
+      'prd-v2': 'prd-v2'
+    };
+
+    const schemaName = schemaAliases[templateType] || templateType;
+    const schemaPath = path.join(this.schemasDir, `${schemaName}.schema.json`);
 
     try {
       const content = await fs.readFile(schemaPath, 'utf-8');

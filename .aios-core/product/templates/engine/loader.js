@@ -131,7 +131,14 @@ class TemplateLoader {
    */
   resolveTemplatePath(templateType) {
     const extensions = ['.hbs', '.handlebars', '.md'];
-    const basePath = path.join(this.templatesDir, templateType);
+
+    // Handle versioned templates (e.g., prd-v2 -> prd-v2.0.hbs)
+    const templateAliases = {
+      'prd-v2': 'prd-v2.0'
+    };
+
+    const templateName = templateAliases[templateType] || templateType;
+    const basePath = path.join(this.templatesDir, templateName);
 
     // Try each extension
     for (const ext of extensions) {
@@ -157,7 +164,9 @@ class TemplateLoader {
     return variables.map(variable => ({
       name: variable.name,
       type: variable.type || 'string',
-      required: variable.required !== false,
+      // Variables with requiredIf are NOT required by default - they're conditionally required
+      required: variable.requiredIf ? false : (variable.required !== false),
+      requiredIf: variable.requiredIf,
       default: variable.default,
       prompt: variable.prompt || `Enter ${variable.name}:`,
       choices: variable.choices,
