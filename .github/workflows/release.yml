@@ -134,17 +134,27 @@ jobs:
       - name: Create distribution archive
         run: |
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+
+          # Use tar with || true to ignore "file changed" warnings
           tar -czf aios-fullstack-${VERSION}.tar.gz \
             --exclude=node_modules \
             --exclude=.git \
             --exclude=tests \
             --exclude='*.log' \
             --exclude='.github' \
-            .
-          
+            --exclude='*.tar.gz' \
+            --exclude='*.zip' \
+            . || true
+
+          # Verify tar was created
+          if [ ! -f "aios-fullstack-${VERSION}.tar.gz" ]; then
+            echo "❌ Failed to create tar archive"
+            exit 1
+          fi
+
           # Create source code zip
           zip -r aios-fullstack-${VERSION}-source.zip . \
-            -x "node_modules/*" ".git/*" "tests/*" "*.log" ".github/*"
+            -x "node_modules/*" ".git/*" "tests/*" "*.log" ".github/*" "*.tar.gz" "*.zip"
 
       - name: Upload Release Assets
         env:
@@ -166,24 +176,49 @@ jobs:
     needs: [create-release, build-and-upload]
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger NPM Publication
+      - name: Wait for release event propagation
+        run: |
+          echo "⏳ Waiting for release event to propagate..."
+          sleep 10
+
+      - name: Verify npm-publish workflow triggered
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            
-            await github.rest.actions.createWorkflowDispatch({
+
+            // Check if npm-publish workflow was triggered by release event
+            const runs = await github.rest.actions.listWorkflowRuns({
               owner,
               repo,
               workflow_id: 'npm-publish.yml',
-              ref: 'main',
-              inputs: {
-                publish_mode: 'stable',
-                packages: 'all'
-              }
+              per_page: 5
             });
-            
-            console.log('✅ Triggered NPM publication workflow');
+
+            const recentRun = runs.data.workflow_runs.find(run =>
+              run.event === 'release' &&
+              new Date(run.created_at) > new Date(Date.now() - 60000)
+            );
+
+            if (recentRun) {
+              console.log(`✅ npm-publish workflow triggered automatically (run #${recentRun.run_number})`);
+              console.log(`   URL: ${recentRun.html_url}`);
+            } else {
+              console.log('⚠️ npm-publish not auto-triggered, dispatching manually...');
+
+              await github.rest.actions.createWorkflowDispatch({
+                owner,
+                repo,
+                workflow_id: 'npm-publish.yml',
+                ref: 'main',
+                inputs: {
+                  publish_mode: 'stable',
+                  packages: 'all'
+                }
+              });
+
+              console.log('✅ Manually triggered NPM publication workflow');
+            }
 
   notify:
     needs: [create-release, build-and-upload, trigger-npm-publish]

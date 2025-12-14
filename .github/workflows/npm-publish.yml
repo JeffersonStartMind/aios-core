@@ -119,9 +119,6 @@ jobs:
   publish:
     needs: [test, build]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: ${{ fromJson(format('[{0}]', join(fromJson(format('["{0}"]', replace(needs.build.outputs.packages, ',', '", "')))))) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -152,54 +149,31 @@ jobs:
             echo "tag=preview" >> $GITHUB_OUTPUT
           fi
 
-      - name: Prepare package for publishing
-        run: |
-          PACKAGE="${{ matrix.package }}"
-          
-          case "$PACKAGE" in
-            "workspace")
-              PKG_DIR="."
-              PKG_NAME="aios-fullstack"
-              ;;
-            "core")
-              PKG_DIR=".aios-core"
-              PKG_NAME="@aios-fullstack/core"
-              ;;
-            *)
-              PKG_DIR="$PACKAGE"
-              PKG_NAME="@aios-fullstack/$PACKAGE"
-              ;;
-          esac
-          
-          echo "PKG_DIR=$PKG_DIR" >> $GITHUB_ENV
-          echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
-
-      - name: Check if package should be published
+      - name: Check if aios-core should be published
         id: should-publish
         run: |
-          cd "$PKG_DIR"
-          
+          PKG_NAME="aios-core"
+          VERSION="${{ needs.build.outputs.version }}"
+
           # Check if package exists in registry
-          if npm view "$PKG_NAME@${{ needs.build.outputs.version }}" version > /dev/null 2>&1; then
-            echo "Version ${{ needs.build.outputs.version }} already exists for $PKG_NAME"
+          if npm view "${PKG_NAME}@${VERSION}" version > /dev/null 2>&1; then
+            echo "Version ${VERSION} already exists for ${PKG_NAME}"
             echo "should_publish=false" >> $GITHUB_OUTPUT
           else
-            echo "Package $PKG_NAME@${{ needs.build.outputs.version }} not found in registry"
+            echo "Package ${PKG_NAME}@${VERSION} not found in registry"
             echo "should_publish=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Publish package to NPM
+      - name: Publish aios-core to NPM
         if: steps.should-publish.outputs.should_publish == 'true'
         run: |
-          cd "$PKG_DIR"
-          
           # Create npmrc for authentication
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
-          
+
           # Publish with appropriate tag
           npm publish --tag ${{ steps.publish-tag.outputs.tag }} --access public
-          
-          echo "✅ Published $PKG_NAME@${{ needs.build.outputs.version }} with tag ${{ steps.publish-tag.outputs.tag }}"
+
+          echo "✅ Published aios-core@${{ needs.build.outputs.version }} with tag ${{ steps.publish-tag.outputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -207,11 +181,11 @@ jobs:
         if: steps.should-publish.outputs.should_publish == 'true'
         run: |
           sleep 10  # Wait for npm registry to update
-          
-          if npm view "$PKG_NAME@${{ needs.build.outputs.version }}" version > /dev/null 2>&1; then
-            echo "✅ Verified: $PKG_NAME@${{ needs.build.outputs.version }} is available on NPM"
+
+          if npm view "aios-core@${{ needs.build.outputs.version }}" version > /dev/null 2>&1; then
+            echo "✅ Verified: aios-core@${{ needs.build.outputs.version }} is available on NPM"
           else
-            echo "❌ Verification failed: $PKG_NAME@${{ needs.build.outputs.version }} not found"
+            echo "❌ Verification failed: aios-core@${{ needs.build.outputs.version }} not found"
             exit 1
           fi
 
@@ -223,12 +197,13 @@ jobs:
       - name: Notify completion
         run: |
           if [ "${{ needs.publish.result }}" = "success" ]; then
-            echo "🎉 Successfully published AIOS-FullStack packages:"
+            echo "🎉 Successfully published aios-core to NPM:"
             echo "   Version: ${{ needs.build.outputs.version }}"
-            echo "   Packages: ${{ needs.build.outputs.packages }}"
+            echo "   Package: aios-core"
             echo "   Registry: ${{ env.NPM_REGISTRY }}"
+            echo "   URL: https://www.npmjs.com/package/aios-core"
           else
-            echo "❌ Publishing failed for some packages"
+            echo "❌ Publishing failed"
             exit 1
           fi
 
@@ -242,43 +217,38 @@ jobs:
 
       - name: Generate release notes
         run: |
-          cat > release-notes.md << EOF
-          # AIOS-FullStack v${{ needs.build.outputs.version }}
-          
-          ## 📦 Published Packages
-          
+          cat > release-notes.md << 'EOF'
+          # AIOS-Core v${{ needs.build.outputs.version }}
+
+          ## 📦 NPM Package
+
           | Package | NPM Link | Description |
           |---------|----------|-------------|
-          | @aios-fullstack/workspace | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/workspace) | Complete workspace with all components |
-          | @aios-fullstack/core | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/core) | Meta-agent orchestration and task management |
-          | @aios-fullstack/memory | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/memory) | Vector storage and semantic search |
-          | @aios-fullstack/security | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/security) | Input sanitization and vulnerability scanning |
-          | @aios-fullstack/performance | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/performance) | Monitoring, profiling, and optimization |
-          | @aios-fullstack/telemetry | [npmjs.com](https://www.npmjs.com/package/@aios-fullstack/telemetry) | Analytics, error reporting, and metrics |
-          
+          | aios-core | [npmjs.com](https://www.npmjs.com/package/aios-core) | AI-Orchestrated System for Full Stack Development |
+
           ## 🚀 Installation
-          
-          \`\`\`bash
-          # Install complete workspace
-          npm install @aios-fullstack/workspace
-          
-          # Or install individual packages
-          npm install @aios-fullstack/core @aios-fullstack/memory
-          \`\`\`
-          
+
+          ```bash
+          # Global installation (recommended)
+          npm install -g aios-core
+
+          # Or as project dependency
+          npm install aios-core
+          ```
+
           ## 📋 What's New
-          
+
           * ✅ Complete Meta-Agent MVP and Framework Distribution
           * 🔒 Security hardening with penetration testing
           * ⚡ Performance optimization framework
           * 📊 Privacy-conscious telemetry system
           * 📦 Modular NPM package distribution
-          
+
           ## 🔗 Links
-          
-          * [GitHub Repository](https://github.com/allfluenceinc/aios-fullstack)
-          * [Documentation](https://github.com/allfluenceinc/aios-fullstack#readme)
-          * [Issues](https://github.com/allfluenceinc/aios-fullstack/issues)
+
+          * [GitHub Repository](https://github.com/SynkraAI/aios-core)
+          * [Documentation](https://github.com/SynkraAI/aios-core#readme)
+          * [Issues](https://github.com/SynkraAI/aios-core/issues)
           EOF
 
       - name: Update release with notes
@@ -287,7 +257,7 @@ jobs:
           script: |
             const fs = require('fs');
             const releaseNotes = fs.readFileSync('release-notes.md', 'utf8');
-            
+
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
