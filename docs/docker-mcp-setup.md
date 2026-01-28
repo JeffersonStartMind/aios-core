@@ -415,6 +415,7 @@ Only use docker-gateway when:
 
 ## Related Documentation
 
+- [Desktop Commander MCP Guide](./guides/mcp/desktop-commander.md)
 - [MCP Global Setup Guide](./guides/mcp-global-setup.md)
 - [MCP Architecture Diagrams](./architecture/mcp-system-diagrams.md)
 - [DevOps Agent Reference](./agent-reference-guide.md#devops)
