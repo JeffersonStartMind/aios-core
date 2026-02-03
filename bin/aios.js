@@ -56,11 +56,19 @@ USAGE:
   npx @synkra/aios-core@latest              # Run installation wizard
   npx @synkra/aios-core@latest install      # Install in current project
   npx @synkra/aios-core@latest init <name>  # Create new project
+  npx @synkra/aios-core@latest update       # Update to latest version
   npx @synkra/aios-core@latest validate     # Validate installation integrity
   npx @synkra/aios-core@latest info         # Show system info
   npx @synkra/aios-core@latest doctor       # Run diagnostics
   npx @synkra/aios-core@latest --version    # Show version
   npx @synkra/aios-core@latest --help       # Show this help
+
+UPDATE:
+  aios update                    # Update to latest version
+  aios update --check            # Check for updates without applying
+  aios update --dry-run          # Preview what would be updated
+  aios update --force            # Force update even if up-to-date
+  aios update --verbose          # Show detailed output
 
 VALIDATION:
   aios validate                    # Validate installation integrity
@@ -174,6 +182,67 @@ async function runValidate() {
       }
       process.exit(2);
     }
+  }
+}
+
+// Helper: Run update command
+async function runUpdate() {
+  const updateArgs = args.slice(1);
+  const isCheck = updateArgs.includes('--check');
+  const isDryRun = updateArgs.includes('--dry-run');
+  const isForce = updateArgs.includes('--force');
+  const isVerbose = updateArgs.includes('--verbose') || updateArgs.includes('-v');
+
+  try {
+    const updaterPath = path.join(__dirname, '..', 'packages', 'installer', 'src', 'updater', 'index.js');
+
+    if (!fs.existsSync(updaterPath)) {
+      console.error('❌ Updater module not found');
+      console.error('Please ensure AIOS-FullStack is installed correctly.');
+      process.exit(1);
+    }
+
+    const { AIOSUpdater, formatCheckResult, formatUpdateResult } = require(updaterPath);
+
+    const updater = new AIOSUpdater(process.cwd(), {
+      verbose: isVerbose,
+      force: isForce,
+    });
+
+    if (isCheck) {
+      // Check only mode
+      console.log('🔍 Checking for updates...\n');
+      const result = await updater.checkForUpdates();
+      console.log(formatCheckResult(result, { colors: true }));
+
+      if (result.status === 'check_failed') {
+        process.exit(1);
+      }
+    } else {
+      // Update mode
+      console.log('🔄 AIOS Update\n');
+
+      const result = await updater.update({
+        dryRun: isDryRun,
+        onProgress: (phase, message) => {
+          if (isVerbose) {
+            console.log(`[${phase}] ${message}`);
+          }
+        },
+      });
+
+      console.log(formatUpdateResult(result, { colors: true }));
+
+      if (!result.success && result.error !== 'Already up to date') {
+        process.exit(1);
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Update error: ${error.message}`);
+    if (args.includes('--verbose') || args.includes('-v')) {
+      console.error(error.stack);
+    }
+    process.exit(1);
   }
 }
 
@@ -322,6 +391,11 @@ async function main() {
     case 'validate':
       // Post-installation validation - Story 6.19
       await runValidate();
+      break;
+
+    case 'update':
+      // Update to latest version - Epic 7
+      await runUpdate();
       break;
 
     case '--version':
