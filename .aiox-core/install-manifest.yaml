@@ -8,7 +8,7 @@
 # - File types for categorization
 #
 version: 5.0.1
-generated_at: "2026-03-06T01:02:54.815Z"
+generated_at: "2026-03-06T01:21:12.245Z"
 generator: scripts/generate-install-manifest.js
 file_count: 1093
 files:
@@ -3345,9 +3345,9 @@ files:
     type: script
     size: 4826
   - path: infrastructure/scripts/validate-opencode-compatibility.js
-    hash: sha256:5f9d94b67933fbf3a68ded4a0bf4431ddfbc08596577ba0599bbab1366ceb5ac
+    hash: sha256:2c68a5943231aaa8d69ed5e4bbc4534247b1751b6a3296560c8cec1fb0dbb6cc
     type: script
-    size: 5537
+    size: 5613
   - path: infrastructure/scripts/validate-opencode-integration.js
     hash: sha256:7d9b19bc71ec65cd072b65bb57165686e58f6d05e6ac75e734db8cfdbc775652
     type: script
