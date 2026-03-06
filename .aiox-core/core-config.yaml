@@ -49,6 +49,7 @@ ide:
     - gemini
     - cursor
     - claude-code
+    - opencode
   configs:
     vscode: true
     codex: true
@@ -57,6 +58,7 @@ ide:
     zed: false
     claude-desktop: false
     claude-code: true
+    opencode: true
 mcp:
   enabled: true
   configLocation: .claude/mcp.json
@@ -333,6 +335,10 @@ ideSync:
       enabled: true
       path: .antigravity/rules/agents
       format: cursor-style
+    opencode:
+      enabled: true
+      path: .opencode/agents
+      format: opencode-rules
   redirects: {}
   validation:
     strictMode: true

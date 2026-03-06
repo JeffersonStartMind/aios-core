@@ -49,6 +49,7 @@ Muitos recursos avançados do AIOX dependem de eventos de ciclo de vida (hooks).
 | Claude Code | Completa (referência) | Automação máxima de contexto, guardrails e auditoria |
 | Gemini CLI | Alta (eventos nativos) | Cobertura forte de automações pre/post tool e sessão |
 | Codex CLI | Parcial/limitada | Parte das automações depende de `AGENTS.md`, `/skills`, MCP e fluxo operacional |
+| OpenCode CLI | Sem lifecycle hooks equivalentes | Menor automação; compensar com custom commands (`/project:aiox-<agent>`) e validators manuais |
 | Cursor | Sem lifecycle hooks equivalentes | Menor automação de pre/post tool; foco em regras, MCP e fluxo do agente |
 | GitHub Copilot | Sem lifecycle hooks equivalentes | Menor automação de sessão/tooling; foco em instruções de repositório + MCP no VS Code |
 | AntiGravity | Workflow-based (não hook-based) | Integração por workflows, não por eventos de hook equivalentes ao Claude |
@@ -238,6 +239,14 @@ O Synkra AIOX inclui regras pré-configuradas para IDE para melhorar sua experi�
 - Use `npm run sync:skills:codex:global` apenas fora deste projeto (para evitar duplicidade no `/skills`)
 - Validacao dedicada: `npm run validate:codex-sync && npm run validate:codex-integration`
 - Guardrails de skills/paths: `npm run validate:codex-skills && npm run validate:paths`
+
+#### Para OpenCode CLI:
+
+- ✅ Integração completa: agents + custom commands sincronizáveis com `npm run sync:ide:opencode`
+- ✅ Suporte nativo a `AGENTS.md` — carregado automaticamente pelo OpenCode
+- 12 custom commands disponíveis como `/project:aiox-<agent>` (ex.: `/project:aiox-dev`)
+- Validação dedicada: `npm run validate:opencode-sync && npm run validate:opencode-integration`
+- 📖 [Guia completo da plataforma OpenCode](docs/pt/platforms/opencode.md)
 
 #### Para Gemini CLI:
 

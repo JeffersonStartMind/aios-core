@@ -67,6 +67,10 @@
     "validate:gemini-sync": "node .aiox-core/infrastructure/scripts/ide-sync/index.js validate --ide gemini --strict",
     "validate:github-copilot-sync": "node .aiox-core/infrastructure/scripts/ide-sync/index.js validate --ide github-copilot --strict",
     "validate:antigravity-sync": "node .aiox-core/infrastructure/scripts/ide-sync/index.js validate --ide antigravity --strict",
+    "sync:ide:opencode": "node .aiox-core/infrastructure/scripts/ide-sync/index.js sync --ide opencode",
+    "validate:opencode-sync": "node .aiox-core/infrastructure/scripts/ide-sync/index.js validate --ide opencode --strict",
+    "validate:opencode-integration": "node .aiox-core/infrastructure/scripts/validate-opencode-integration.js",
+    "validate:integration": "node .aiox-core/infrastructure/scripts/validate-opencode-compatibility.js",
     "validate:gemini-integration": "node .aiox-core/infrastructure/scripts/validate-gemini-integration.js",
     "sync:skills:codex": "node .aiox-core/infrastructure/scripts/codex-skills-sync/index.js",
     "sync:skills:codex:global": "node .aiox-core/infrastructure/scripts/codex-skills-sync/index.js --global --global-only",
@@ -78,6 +82,7 @@
     "sync:ide:cursor": "node .aiox-core/infrastructure/scripts/ide-sync/index.js sync --ide cursor",
     "validate:publish": "node bin/utils/validate-publish.js",
     "prepublishOnly": "node bin/utils/validate-publish.js && npm run generate:manifest && npm run validate:manifest",
+    "postinstall": "node scripts/postinstall.js",
     "prepare": "husky"
   },
   "dependencies": {
@@ -137,6 +142,7 @@
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
+    "@types/babel__template": "^7.4.4",
     "@types/jest": "^30.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",

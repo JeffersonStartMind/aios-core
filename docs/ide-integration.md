@@ -33,6 +33,7 @@ AIOX supports multiple AI-powered development platforms. Choose the one that bes
 | Claude Code | Works | `/agent-name` commands | Works (full) | -- |
 | Gemini CLI | Works | `/aiox-menu` then `/aiox-<agent>` | Works (minor differences in event handling) | -- |
 | Codex CLI | Limited | `/skills` then `aiox-<agent-id>` | Limited (some checks need manual sync) | Run `npm run sync:ide:codex` and follow `/skills` flow |
+| OpenCode CLI | Limited | `/project:aiox-<agent>` custom command | Limited (no lifecycle hooks) | Use generated custom commands and run validators manually (`npm run validate:parity`) |
 | Cursor | Limited | `@agent` + synced rules | Not available | Follow synced rules and run validators manually (`npm run validate:parity`) |
 | GitHub Copilot | Limited | chat modes + repo instructions | Not available | Use repo instructions and VS Code MCP config for context |
 | AntiGravity | Limited | workflow-driven activation | Not available | Use generated workflows and run validators manually |
@@ -51,6 +52,7 @@ Some IDEs run automatic checks before and after each action (e.g., validating co
 | Claude Code | Full | Nothing | Built-in checks handle everything |
 | Gemini CLI | High | Minor timing differences in checks | Gemini native checks cover most scenarios |
 | Codex CLI | Partial | Less automatic session tracking; some pre/post-action checks need manual trigger | Use `AGENTS.md` + `/skills` + sync/validation scripts |
+| OpenCode CLI | None | No automatic pre/post-action checks; no audit trail | Use generated custom commands, run `npm run validate:parity` manually |
 | Cursor | None | No automatic pre/post-action checks; no automatic audit trail | Follow synced rules, use MCP for context, run validators |
 | GitHub Copilot | None | Same as Cursor, plus more reliance on manual workflow | Use repo instructions, chat modes, VS Code MCP |
 | AntiGravity | None | No automatic check equivalents | Use generated workflows and run validators |
@@ -61,7 +63,8 @@ If your goal is to get started as fast as possible:
 
 1. **Best option:** Use `Claude Code` or `Gemini CLI` -- they have the most automation and fewest manual steps.
 2. **Good option:** Use `Codex CLI` if you prefer a terminal-first workflow and can follow the `/skills` activation flow.
-3. **Usable with extra steps:** Use `Cursor`, `Copilot`, or `AntiGravity` -- they work but require more manual validation steps (see workarounds in the table above).
+3. **Good option:** Use `OpenCode CLI` if you need provider-agnostic support (75+ models including local) — activate agents via `/project:aiox-<agent>` custom commands.
+4. **Usable with extra steps:** Use `Cursor`, `Copilot`, or `AntiGravity` -- they work but require more manual validation steps (see workarounds in the table above).
 
 ### Practical Consequences by Capability
 

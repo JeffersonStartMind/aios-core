@@ -8,9 +8,9 @@
 # - File types for categorization
 #
 version: 5.0.1
-generated_at: "2026-03-05T21:57:19.528Z"
+generated_at: "2026-03-06T01:21:12.245Z"
 generator: scripts/generate-install-manifest.js
-file_count: 1089
+file_count: 1093
 files:
   - path: cli/commands/config/index.js
     hash: sha256:25c4b9bf4e0241abf7754b55153f49f1a214f1fb5fe904a576675634cb7b3da9
@@ -177,9 +177,9 @@ files:
     type: cli
     size: 5907
   - path: core-config.yaml
-    hash: sha256:d1d90d2cc22e4c870a8a90446d6b98dfd1918829cd5c5f31809bece6ddcfc1cf
+    hash: sha256:ec8b2fd9526c6d79f56b6b58676c720551bc62956305216e93af5b504e6dd71b
     type: config
-    size: 10999
+    size: 11125
   - path: core/code-intel/code-intel-client.js
     hash: sha256:6c9a08a37775acf90397aa079a4ad2c5edcc47f2cfd592b26ae9f3d154d1deb8
     type: core
@@ -3081,9 +3081,13 @@ files:
     type: script
     size: 5534
   - path: infrastructure/scripts/ide-sync/index.js
-    hash: sha256:2f48896307b1fc3839f13169cab554c0a9a34f9d0e3961f1ccc07a2bbfaebdb2
+    hash: sha256:e1d75e8a0ba14e578465fbbd9bca478233e495b4163bc7c7ae70021a0a1f6a3b
     type: script
-    size: 14906
+    size: 15820
+  - path: infrastructure/scripts/ide-sync/opencode-commands.js
+    hash: sha256:7507f270381c3ac9ff42b2cd32d677ec08c8dc303ec96992b4f16df065c88400
+    type: script
+    size: 5302
   - path: infrastructure/scripts/ide-sync/README.md
     hash: sha256:c18c2563b2ca64580a4814edd3c20a79c96f33fa8b953ee02206ef0faad53d35
     type: script
@@ -3108,6 +3112,10 @@ files:
     hash: sha256:6d365be4a55e2f5ced316a0efbfa50fb925562f3e145d47a86c57a2c685343ac
     type: script
     size: 5693
+  - path: infrastructure/scripts/ide-sync/transformers/opencode.js
+    hash: sha256:11f02450551041f51e8096d102dacd11f32ebaea3d5948b203c34588e184f188
+    type: script
+    size: 3079
   - path: infrastructure/scripts/ide-sync/validator.js
     hash: sha256:356c78125db7f88d14f4e521808e96593d729291c3d7a1c36cb02f78b4aef8fc
     type: script
@@ -3336,6 +3344,14 @@ files:
     hash: sha256:57a31b8a4b8c129189afaad961ed0261a205c02b55028d61146a9e599c112883
     type: script
     size: 4826
+  - path: infrastructure/scripts/validate-opencode-compatibility.js
+    hash: sha256:2c68a5943231aaa8d69ed5e4bbc4534247b1751b6a3296560c8cec1fb0dbb6cc
+    type: script
+    size: 5613
+  - path: infrastructure/scripts/validate-opencode-integration.js
+    hash: sha256:7d9b19bc71ec65cd072b65bb57165686e58f6d05e6ac75e734db8cfdbc775652
+    type: script
+    size: 6473
   - path: infrastructure/scripts/validate-output-pattern.js
     hash: sha256:91111d656e8d7b38a20a1bda753e663b74318f75cdab2025c7e0b84c775fc83d
     type: script

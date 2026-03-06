@@ -25,12 +25,14 @@ const { parseAllAgents } = require('./agent-parser');
 const { generateAllRedirects, writeRedirects } = require('./redirect-generator');
 const { validateAllIdes, formatValidationReport } = require('./validator');
 const { syncGeminiCommands, buildGeminiCommandFiles } = require('./gemini-commands');
+const { syncOpencodeCommands, buildAllCommandFiles: buildOpencodeCommandFiles } = require('./opencode-commands');
 
 // Transformers
 const claudeCodeTransformer = require('./transformers/claude-code');
 const cursorTransformer = require('./transformers/cursor');
 const antigravityTransformer = require('./transformers/antigravity');
 const githubCopilotTransformer = require('./transformers/github-copilot');
+const opencodeTransformer = require('./transformers/opencode');
 
 // ANSI colors for output
 const colors = {
@@ -128,6 +130,7 @@ function getTransformer(format) {
     'condensed-rules': cursorTransformer,
     'cursor-style': antigravityTransformer,
     'github-copilot': githubCopilotTransformer,
+    'opencode-rules': opencodeTransformer,
   };
 
   return transformers[format] || claudeCodeTransformer;
@@ -269,6 +272,10 @@ async function commandSync(options) {
     if (ideName === 'gemini') {
       const geminiCommands = syncGeminiCommands(agents, projectRoot, options);
       result.commandFiles = geminiCommands.files;
+    } else if (ideName === 'opencode') {
+      // OpenCode: also sync custom command files (.opencode/commands/aiox-*.md)
+      const opencodeCommands = syncOpencodeCommands(agents, projectRoot, options);
+      result.commandFiles = opencodeCommands.files;
     } else {
       result.commandFiles = [];
     }
@@ -409,6 +416,18 @@ async function commandValidate(options) {
       ideConfigs['gemini-commands'] = {
         expectedFiles: commandFiles,
         targetDir: path.join(projectRoot, '.gemini', 'commands'),
+      };
+    }
+
+    // OpenCode custom command files are synced under .opencode/commands/aiox-*.md
+    if (ideName === 'opencode') {
+      const commandFiles = buildOpencodeCommandFiles(agents).map((entry) => ({
+        filename: entry.filename,
+        content: entry.content,
+      }));
+      ideConfigs['opencode-commands'] = {
+        expectedFiles: commandFiles,
+        targetDir: path.join(projectRoot, '.opencode', 'commands'),
       };
     }
   }
