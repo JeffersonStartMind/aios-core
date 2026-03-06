@@ -63,9 +63,12 @@ function runCommand(command, args, options = {}) {
     };
   }
 
+  const executable = command;
+  const useShell = command === 'npm';
+
   const start = Date.now();
-  const result = spawnSync(command, args, {
-    shell: true,
+  const result = spawnSync(executable, args, {
+    shell: useShell,
     stdio: 'inherit',
     env: process.env,
     timeout: options.timeoutMs,
