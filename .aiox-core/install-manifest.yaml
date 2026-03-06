@@ -7,8 +7,8 @@
 # - SHA256 hashes for change detection
 # - File types for categorization
 #
-version: 4.4.6
-generated_at: "2026-03-06T00:29:03.754Z"
+version: 5.0.1
+generated_at: "2026-03-06T01:02:54.815Z"
 generator: scripts/generate-install-manifest.js
 file_count: 1093
 files:
@@ -1221,9 +1221,9 @@ files:
     type: data
     size: 9575
   - path: data/entity-registry.yaml
-    hash: sha256:2e4f0910a21a98556617290b14f6f57027a0992481fbcb18bb24fe4938fb28eb
+    hash: sha256:26d071d47598d2fd2297cb36dd9faa769e90c6d8da40a16205bd8e9d13c9b1c0
     type: data
-    size: 523755
+    size: 522301
   - path: data/learned-patterns.yaml
     hash: sha256:24ac0b160615583a0ff783d3da8af80b7f94191575d6db2054ec8e10a3f945dc
     type: data
@@ -3087,7 +3087,7 @@ files:
   - path: infrastructure/scripts/ide-sync/opencode-commands.js
     hash: sha256:7507f270381c3ac9ff42b2cd32d677ec08c8dc303ec96992b4f16df065c88400
     type: script
-    size: 5453
+    size: 5302
   - path: infrastructure/scripts/ide-sync/README.md
     hash: sha256:c18c2563b2ca64580a4814edd3c20a79c96f33fa8b953ee02206ef0faad53d35
     type: script
@@ -3115,7 +3115,7 @@ files:
   - path: infrastructure/scripts/ide-sync/transformers/opencode.js
     hash: sha256:11f02450551041f51e8096d102dacd11f32ebaea3d5948b203c34588e184f188
     type: script
-    size: 3190
+    size: 3079
   - path: infrastructure/scripts/ide-sync/validator.js
     hash: sha256:356c78125db7f88d14f4e521808e96593d729291c3d7a1c36cb02f78b4aef8fc
     type: script
@@ -3317,9 +3317,9 @@ files:
     type: script
     size: 5861
   - path: infrastructure/scripts/tool-resolver.js
-    hash: sha256:267fbb7c03d3cb30b430d8ac426dd65e863009704c5a7c03f6ae6e49104da43b
+    hash: sha256:2fa44e4a940d4c33570fd9b4495b5c39792c52ca91b98c4be2fb55cb974ad095
     type: script
-    size: 11000
+    size: 10997
   - path: infrastructure/scripts/transaction-manager.js
     hash: sha256:bed375a4d72928ecfa670626c3e504194c4bf4439eab399fc5b31c919e873e86
     type: script
@@ -3769,9 +3769,9 @@ files:
     type: template
     size: 890
   - path: product/templates/engine/elicitation.js
-    hash: sha256:01e327bee674ff9d01ed0f4f553b42a3cf178780811c6f88bbd86c30ffaeb6cc
+    hash: sha256:1994cc9ecca5c9073f399b369b3a5611bb225c836da5d6cfe6d38ea1b85fefac
     type: template
-    size: 9310
+    size: 9272
   - path: product/templates/engine/index.js
     hash: sha256:6f2d9e32d1bd0b7c1d018b7586c829de6f2e51bf2575350816f9a6e4bf6b22a7
     type: template
