@@ -1,6 +1,19 @@
 name: OpenCode Compatibility
 
 on:
+  push:
+    branches:
+      - opencode-compat-validation
+    paths:
+      - '.aiox-core/infrastructure/scripts/validate-opencode-integration.js'
+      - '.aiox-core/infrastructure/scripts/ide-sync/**'
+      - '.github/workflows/opencode-compat.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.gemini/commands/**'
+      - '.claude/commands/**'
+      - '.cursor/rules/**'
+      - '.codex/**'
   workflow_dispatch:
   pull_request:
     branches:
