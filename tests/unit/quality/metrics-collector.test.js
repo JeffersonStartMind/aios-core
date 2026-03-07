@@ -17,7 +17,10 @@ const {
 
 // Test data directory
 const TEST_DATA_DIR = path.join(__dirname, '../../fixtures/quality');
-const TEST_METRICS_FILE = path.join(TEST_DATA_DIR, 'test-metrics.json');
+const TEST_METRICS_FILE = path.join(
+  TEST_DATA_DIR,
+  `test-metrics-${process.pid}-${process.env.JEST_WORKER_ID || '1'}.json`
+);
 
 describe('MetricsCollector', () => {
   let collector;
@@ -142,11 +145,13 @@ describe('MetricsCollector', () => {
     });
 
     it('should reject invalid layer numbers', async () => {
-      await expect(collector.recordRun(0, { passed: true }))
-        .rejects.toThrow('Layer must be 1, 2, or 3');
+      await expect(collector.recordRun(0, { passed: true })).rejects.toThrow(
+        'Layer must be 1, 2, or 3'
+      );
 
-      await expect(collector.recordRun(4, { passed: true }))
-        .rejects.toThrow('Layer must be 1, 2, or 3');
+      await expect(collector.recordRun(4, { passed: true })).rejects.toThrow(
+        'Layer must be 1, 2, or 3'
+      );
     });
 
     it('should include metadata in run record', async () => {

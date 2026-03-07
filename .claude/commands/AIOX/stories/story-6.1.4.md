@@ -1,9 +1,13 @@
 # Story 6.1.4: Unified Greeting System Integration (v4 - Expanded)
 
+> Governance note: this is a legacy planning artifact kept for historical traceability.
+> Canonical story record is now `docs/stories/completed/story-6.1.4-unified-greeting-system-integration.md`.
+> Do not execute implementation workflow from this file.
+
 **Story ID:** 6.1.4  
 **Epic:** Epic-6.1 - Agent Identity System  
 **Wave:** Wave 1 (Foundation)  
-**Status:** 📋 Ready to Start  
+**Status:** 📦 Archived (Governance Migrated)  
 **Priority:** 🔴 Critical  
 **Owner:** Dev (Dex)  
 **Created:** 2025-01-14  
@@ -18,12 +22,14 @@
 **EXPANDED SCOPE:** Implement a unified greeting system that integrates all greeting components (session context, project status, agent personalization, user preferences) into a single, optimized, and maintainable solution. This story unifies Stories 6.1.1 through 6.1.6 into a cohesive system that actually works.
 
 **Original Scope (Already Implemented):**
+
 - ✅ User-configurable greeting preferences (auto/minimal/named/archetypal)
 - ✅ `GreetingPreferenceManager` class
 - ✅ CLI commands for preference management
 - ✅ Integration with `GreetingBuilder`
 
 **New Scope (This Story):**
+
 - 🔄 Expand `agent-config-loader.js` to load complete agent definitions
 - 🔄 Create unified `generate-greeting.js` wrapper
 - 🔄 Modify `greeting-builder.js` to accept pre-loaded context
@@ -40,7 +46,8 @@
 **I want** agents to use a unified greeting system that integrates session context, project status, agent personalization, and user preferences,  
 **So that** I have a consistent, fast, and contextually relevant experience when activating any agent.
 
-**Business Value:** 
+**Business Value:**
+
 - Unifies all previous greeting-related work (Stories 6.1.1-6.1.6)
 - Fixes integration issues preventing components from working together
 - Provides optimal performance (<150ms with timeout protection)
@@ -54,14 +61,17 @@
 ### Stories Already Implemented (But Not Integrated):
 
 **Story 6.1.1:** Agent Persona Definitions ✅
+
 - Agent definitions with `persona_profile.greeting_levels`
 - **Status:** Implemented, but agents don't use it
 
 **Story 6.1.2.4:** Project Status Context ✅
+
 - `project-status-loader.js` with 60s cache
 - **Status:** Implemented, but agents don't use it
 
 **Story 6.1.2.5:** Contextual Agent Load Integration ✅
+
 - `greeting-builder.js` with session detection
 - `session-context-loader.js` for multi-agent continuity
 - `context-detector.js` for session type detection
@@ -69,21 +79,25 @@
 - **Status:** Implemented, but agents don't use it
 
 **Story 6.1.2.6:** Framework Configuration System ✅
+
 - `agent-config-loader.js` for lazy loading
 - **Status:** Implemented, but doesn't load agent definitions
 
 **Story 6.1.4 (Original):** Greeting Preferences ✅
+
 - `greeting-preference-manager.js`
 - `greeting-config-cli.js`
 - **Status:** Implemented, but agents don't use it
 
 **Story 6.1.6:** Output Formatter ✅
+
 - Output formatting utilities
 - **Status:** Implemented
 
 ### Current Problem:
 
 **Agents use inline logic in STEP 3:**
+
 ```yaml
 - STEP 3: |
     Generate contextual greeting using inline logic:
@@ -94,6 +108,7 @@
 ```
 
 **Problems:**
+
 - ❌ Claude Code doesn't have access to `conversationHistory`
 - ❌ Session detection always returns "new"
 - ❌ Commands always show "full" visibility
@@ -103,13 +118,14 @@
 ### Solution:
 
 **Unified greeting generator called via Node.js:**
+
 ```yaml
 - STEP 3: |
     Generate greeting by executing unified greeting generator:
     1. Execute: node .aiox-core/scripts/generate-greeting.js {agent-id}
     2. Capture the complete output
     3. Display the greeting exactly as returned
-    
+
     If execution fails:
     - Fallback to simple greeting: "{icon} {name} ready"
     - Show: "Type *help to see available commands"
@@ -160,7 +176,7 @@
 
 Add to `.aiox-core/scripts/agent-config-loader.js`:
 
-```javascript
+````javascript
 /**
  * Agent definition cache (5 min TTL)
  */
@@ -168,7 +184,7 @@ const agentDefCache = new Map();
 
 /**
  * Load complete agent definition from markdown file
- * 
+ *
  * @param {Object} options - Load options
  * @param {boolean} options.skipCache - Skip cache and force reload
  * @returns {Promise<Object>} Complete agent definition (agent, persona_profile, commands, etc.)
@@ -176,7 +192,7 @@ const agentDefCache = new Map();
 async loadAgentDefinition(options = {}) {
   const skipCache = options.skipCache || false;
   const cacheKey = this.agentId;
-  
+
   // Check cache
   if (!skipCache && agentDefCache.has(cacheKey)) {
     const cached = agentDefCache.get(cacheKey);
@@ -184,35 +200,35 @@ async loadAgentDefinition(options = {}) {
       return cached.definition;
     }
   }
-  
+
   // Load from file
   const agentPath = path.join(process.cwd(), '.aiox-core', 'agents', `${this.agentId}.md`);
-  
+
   try {
     const content = await fs.readFile(agentPath, 'utf8');
-    
+
     // Extract YAML block (handle both ```yaml and ```yml)
     const yamlMatch = content.match(/```ya?ml\n([\s\S]*?)\n```/);
     if (!yamlMatch) {
       throw new Error(`No YAML block found in ${this.agentId}.md`);
     }
-    
+
     const agentDef = yaml.load(yamlMatch[1]);
-    
+
     // Validate structure
     if (!agentDef.agent || !agentDef.agent.id) {
       throw new Error(`Invalid agent definition: missing agent.id`);
     }
-    
+
     // Normalize and validate
     const normalized = this._normalizeAgentDefinition(agentDef);
-    
+
     // Cache
     agentDefCache.set(cacheKey, {
       definition: normalized,
       timestamp: Date.now()
     });
-    
+
     return normalized;
   } catch (error) {
     if (error.code === 'ENOENT') {
@@ -233,14 +249,14 @@ _normalizeAgentDefinition(agentDef) {
   if (!agentDef.agent) {
     throw new Error('Agent definition missing "agent" section');
   }
-  
+
   const agent = agentDef.agent;
-  
+
   // Normalize: ensure required fields have defaults
   agent.id = agent.id || 'unknown';
   agent.name = agent.name || agent.id;
   agent.icon = agent.icon || '🤖';
-  
+
   // Ensure persona_profile exists with greeting_levels
   if (!agentDef.persona_profile) {
     agentDef.persona_profile = {
@@ -257,18 +273,18 @@ _normalizeAgentDefinition(agentDef) {
       archetypal: `${agent.icon} ${agent.name} ready`
     };
   }
-  
+
   // Ensure commands array exists
   if (!agentDef.commands || !Array.isArray(agentDef.commands)) {
     agentDef.commands = [];
   }
-  
+
   return agentDef;
 }
 
 /**
  * Load both config and definition (convenience method)
- * 
+ *
  * @param {Object} coreConfig - Core configuration
  * @param {Object} options - Load options
  * @returns {Promise<Object>} Combined config and definition
@@ -278,7 +294,7 @@ async loadComplete(coreConfig, options = {}) {
     this.load(coreConfig, options),
     this.loadAgentDefinition(options)
   ]);
-  
+
   return {
     ...config,
     definition,
@@ -287,9 +303,10 @@ async loadComplete(coreConfig, options = {}) {
     commands: definition.commands || []
   };
 }
-```
+````
 
 **Validation:**
+
 - ✅ Loads agent definition from markdown file
 - ✅ Extracts YAML block correctly
 - ✅ Validates structure (agent.id required)
@@ -306,11 +323,12 @@ async loadComplete(coreConfig, options = {}) {
 **Actions:**
 
 1. Add deprecation warning to `.aiox-core/scripts/config-loader.js`:
+
 ```javascript
 /**
  * @deprecated Use agent-config-loader.js instead
  * This file will be removed in a future version.
- * 
+ *
  * Migration guide:
  * - Old: const { loadAgentConfig } = require('./config-loader');
  * - New: const { AgentConfigLoader } = require('./agent-config-loader');
@@ -320,6 +338,7 @@ async loadComplete(coreConfig, options = {}) {
 ```
 
 2. Check for usages:
+
 ```bash
 grep -r "require.*config-loader" .aiox-core/
 grep -r "from.*config-loader" .aiox-core/
@@ -337,6 +356,7 @@ grep -r "from.*config-loader" .aiox-core/
 **Objective:** Remove completed migration scripts (verify existence first)
 
 **Scripts to Delete (verify existence before deletion):**
+
 1. `.aiox-core/scripts/batch-integrate-greeting-builder.js` ✅ (exists - verified)
 2. `.aiox-core/scripts/apply-inline-greeting-all-agents.js` ❌ (not found - may already be deleted)
 3. `.aiox-core/scripts/update-activation-instructions.js` ✅ (exists - verified)
@@ -345,6 +365,7 @@ grep -r "from.*config-loader" .aiox-core/
 **Implementation Steps:**
 
 1. **Verify script existence:**
+
    ```bash
    # Check each script
    test -f .aiox-core/scripts/batch-integrate-greeting-builder.js && echo "EXISTS" || echo "NOT FOUND"
@@ -354,6 +375,7 @@ grep -r "from.*config-loader" .aiox-core/
    ```
 
 2. **Delete existing scripts only:**
+
    ```bash
    # Delete only if file exists (graceful handling)
    [ -f .aiox-core/scripts/batch-integrate-greeting-builder.js ] && rm .aiox-core/scripts/batch-integrate-greeting-builder.js
@@ -366,12 +388,14 @@ grep -r "from.*config-loader" .aiox-core/
    - Update this task with actual deletion results
 
 **Justification:**
+
 - Migrations completed
 - Historical record preserved in Git
 - Reduces confusion
 - Graceful handling of already-deleted scripts
 
 **Validation:**
+
 - ✅ Scripts verified before deletion
 - ✅ Only existing scripts deleted
 - ✅ Deletion status documented
@@ -398,36 +422,36 @@ Modify `.aiox-core/scripts/greeting-builder.js`:
  */
 async _buildContextualGreeting(agent, context) {
   // Use pre-loaded values if available, otherwise load
-  const sessionType = context.sessionType || 
+  const sessionType = context.sessionType ||
     await this._safeDetectSessionType(context);
-  
-  const projectStatus = context.projectStatus || 
+
+  const projectStatus = context.projectStatus ||
     await this._safeLoadProjectStatus();
-  
+
   // gitConfig always loads (fast, cached)
   const gitConfig = await this._safeCheckGitConfig();
-  
+
   // Build greeting sections based on session type
   const sections = [];
-  
+
   // 1. Presentation (always)
   sections.push(this.buildPresentation(agent, sessionType));
-  
+
   // 2. Role description (new session only)
   if (sessionType === 'new') {
     sections.push(this.buildRoleDescription(agent));
   }
-  
+
   // 3. Project status (if git configured)
   if (gitConfig.configured && projectStatus) {
     sections.push(this.buildProjectStatus(projectStatus, sessionType));
   }
-  
+
   // 4. Session context message (if existing session)
   if (sessionType !== 'new' && context.sessionMessage) {
     sections.push(context.sessionMessage);
   }
-  
+
   // 5. Workflow suggestions (if workflow session)
   if (sessionType === 'workflow' && context.lastCommands) {
     const suggestions = this.workflowNavigator.getNextSteps(
@@ -438,19 +462,20 @@ async _buildContextualGreeting(agent, context) {
       sections.push(this.buildWorkflowSuggestions(suggestions));
     }
   }
-  
+
   // 6. Commands (filtered by visibility)
   const commands = this.filterCommandsByVisibility(agent, sessionType);
   sections.push(this.buildCommands(commands, sessionType));
-  
+
   // 7. Footer
   sections.push(this.buildFooter());
-  
+
   return sections.filter(Boolean).join('\n\n');
 }
 ```
 
 **Key Changes:**
+
 - ✅ Uses `context.sessionType` if provided (avoids duplicate detection)
 - ✅ Uses `context.projectStatus` if provided (avoids duplicate loading)
 - ✅ Uses `context.sessionMessage` if provided (from session-context-loader)
@@ -458,6 +483,7 @@ async _buildContextualGreeting(agent, context) {
 - ✅ Falls back to loading if not provided (backward compatible)
 
 **Validation:**
+
 - ✅ Backward compatible (works with old context format)
 - ✅ Uses pre-loaded values when available
 - ✅ Performance improved (no duplicate loading)
@@ -478,21 +504,21 @@ Create `.aiox-core/scripts/generate-greeting.js`:
 #!/usr/bin/env node
 /**
  * Unified Greeting Generator
- * 
+ *
  * Orchestrates all greeting components for optimal performance:
  * - Agent definition (via expanded agent-config-loader.js)
  * - Session context (session-context-loader.js)
  * - Project status (project-status-loader.js)
  * - User preferences (greeting-preference-manager.js)
  * - Contextual adaptation (greeting-builder.js)
- * 
+ *
  * Performance Targets:
  * - With cache: <50ms
  * - Without cache: <150ms (timeout protection)
  * - Fallback: <10ms
- * 
+ *
  * Usage: node generate-greeting.js <agent-id>
- * 
+ *
  * Part of Story 6.1.4: Unified Greeting System Integration
  */
 
@@ -506,34 +532,34 @@ const yaml = require('js-yaml');
 
 /**
  * Generate unified greeting for agent activation
- * 
+ *
  * @param {string} agentId - Agent identifier (e.g., 'qa', 'dev')
  * @returns {Promise<string>} Formatted greeting string
  * @throws {Error} If agent file not found or invalid
- * 
+ *
  * @example
  * const greeting = await generateGreeting('qa');
  * console.log(greeting);
  */
 async function generateGreeting(agentId) {
   const startTime = Date.now();
-  
+
   try {
     // Load core config
     const coreConfigPath = path.join(process.cwd(), '.aiox-core', 'core-config.yaml');
     const coreConfigContent = await fs.readFile(coreConfigPath, 'utf8');
     const coreConfig = yaml.load(coreConfigContent);
-    
+
     // Load everything in parallel using expanded AgentConfigLoader
     const loader = new AgentConfigLoader(agentId);
     const projectStatusLoader = new ProjectStatusLoader();
-    
+
     const [complete, sessionContext, projectStatus] = await Promise.all([
       loader.loadComplete(coreConfig), // Loads config + definition
       loadSessionContext(agentId),
-      projectStatusLoader.loadProjectStatus()
+      projectStatusLoader.loadProjectStatus(),
     ]);
-    
+
     // Build unified context
     const context = {
       conversationHistory: [], // Not available in Claude Code
@@ -542,28 +568,27 @@ async function generateGreeting(agentId) {
       lastCommands: sessionContext.lastCommands || [],
       previousAgent: sessionContext.previousAgent,
       sessionMessage: sessionContext.message,
-      workflowActive: sessionContext.workflowActive
+      workflowActive: sessionContext.workflowActive,
     };
-    
+
     // Generate greeting using GreetingBuilder
     const builder = new GreetingBuilder();
     const greeting = await builder.buildGreeting(complete.agent, context);
-    
+
     const duration = Date.now() - startTime;
     if (duration > 100) {
       console.warn(`[generate-greeting] Slow generation: ${duration}ms`);
     }
-    
+
     return greeting;
-    
   } catch (error) {
     console.error('[generate-greeting] Error:', {
       agentId,
       error: error.message,
       stack: error.stack,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Fallback: Simple greeting
     return generateFallbackGreeting(agentId);
   }
@@ -586,7 +611,7 @@ async function loadSessionContext(agentId) {
       message: null,
       previousAgent: null,
       lastCommands: [],
-      workflowActive: null
+      workflowActive: null,
     };
   }
 }
@@ -604,7 +629,7 @@ function generateFallbackGreeting(agentId) {
 // CLI interface
 if (require.main === module) {
   const agentId = process.argv[2];
-  
+
   if (!agentId) {
     console.error('Usage: node generate-greeting.js <agent-id>');
     console.error('\nExamples:');
@@ -612,13 +637,13 @@ if (require.main === module) {
     console.error('  node generate-greeting.js dev');
     process.exit(1);
   }
-  
+
   generateGreeting(agentId)
-    .then(greeting => {
+    .then((greeting) => {
       console.log(greeting);
       process.exit(0);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Fatal error:', error.message);
       console.log(generateFallbackGreeting(agentId));
       process.exit(1);
@@ -629,6 +654,7 @@ module.exports = { generateGreeting };
 ```
 
 **Validation:**
+
 - ✅ Loads agent definition via expanded `agent-config-loader.js`
 - ✅ Loads session context in parallel
 - ✅ Loads project status in parallel
@@ -649,6 +675,7 @@ module.exports = { generateGreeting };
 **Objective:** Update only QA agent as proof of concept
 
 **Pilot Agent:**
+
 - `qa.md` (Quinn - Test Architect & Quality Advisor)
 
 **New STEP 3 Format:**
@@ -656,15 +683,15 @@ module.exports = { generateGreeting };
 ```yaml
 - STEP 3: |
     Generate greeting by executing unified greeting generator:
-    
+
     1. Execute: node .aiox-core/scripts/generate-greeting.js qa
     2. Capture the complete output
     3. Display the greeting exactly as returned
-    
+
     If execution fails or times out:
     - Fallback to simple greeting: "✅ qa Agent ready"
     - Show: "Type *help to see available commands"
-    
+
     Do NOT modify or interpret the greeting output.
     Display it exactly as received.
 ```
@@ -678,6 +705,7 @@ module.exports = { generateGreeting };
 5. Test activation: `/AIOX/agents/qa`
 
 **Validation Checklist for QA Pilot:**
+
 - [ ] QA agent file updated correctly
 - [ ] STEP 3 replaced with new format
 - [ ] Agent ID "qa" correctly inserted
@@ -693,36 +721,39 @@ module.exports = { generateGreeting };
 **Test Scenarios:**
 
 1. **New Session Test:**
+
    ```bash
    # Clear session state
    rm .aiox/session-state.json
-   
+
    # Activate QA agent
    /AIOX/agents/qa
-   
+
    # Expected: "new" session type detected
    # Expected: Full greeting with role description
    # Expected: All commands shown (visibility: full, quick, key)
    ```
 
 2. **Existing Session Test:**
+
    ```bash
    # Create session state
    node -e "const fs = require('fs'); const path = require('path'); const sessionPath = path.join(process.cwd(), '.aiox', 'session-state.json'); fs.mkdirSync(path.dirname(sessionPath), { recursive: true }); fs.writeFileSync(sessionPath, JSON.stringify({ sessionId: 'test-123', startTime: new Date().toISOString(), lastActivity: new Date().toISOString(), agentSequence: [{ id: 'po', name: 'Pax' }], lastCommands: ['create-story'], workflowActive: null }), 'utf8');"
-   
+
    # Activate QA agent
    /AIOX/agents/qa
-   
+
    # Expected: "existing" session type detected
    # Expected: Quick greeting (no role description)
    # Expected: Reduced commands (visibility: quick, key)
    ```
 
 3. **Direct Script Test:**
+
    ```bash
    # Test script directly
    node .aiox-core/scripts/generate-greeting.js qa
-   
+
    # Expected: Greeting output without errors
    # Expected: Contains agent name "Quinn"
    # Expected: Contains project status (if git configured)
@@ -730,24 +761,27 @@ module.exports = { generateGreeting };
    ```
 
 4. **Error Handling Test:**
+
    ```bash
    # Test with invalid agent
    node .aiox-core/scripts/generate-greeting.js invalid-agent
-   
+
    # Expected: Fallback greeting shown
    # Expected: No errors thrown
    ```
 
 5. **Performance Test:**
+
    ```bash
    # Measure execution time
    time node .aiox-core/scripts/generate-greeting.js qa
-   
+
    # Expected: <150ms (with timeout protection)
    # Expected: <50ms if cache hit
    ```
 
 **Success Criteria:**
+
 - ✅ QA agent activates successfully
 - ✅ Greeting generated correctly
 - ✅ Session type detected correctly
@@ -757,6 +791,7 @@ module.exports = { generateGreeting };
 - ✅ Performance within targets
 
 **If QA Pilot Fails:**
+
 - Stop and fix issues before proceeding
 - Don't update other agents until QA works perfectly
 - Document issues and solutions
@@ -768,11 +803,13 @@ module.exports = { generateGreeting };
 **Objective:** Update remaining agents only after QA pilot validated
 
 **Prerequisites:**
+
 - ✅ QA agent tested and working perfectly
 - ✅ All test scenarios passed
 - ✅ No errors or issues identified
 
 **Agents to Update (After QA Validation):**
+
 1. `dev.md`
 2. `po.md`
 3. `sm.md`
@@ -794,8 +831,16 @@ const path = require('path');
 
 const AGENTS_DIR = path.join(process.cwd(), '.aiox-core', 'agents');
 const REMAINING_AGENTS = [
-  'dev', 'po', 'sm', 'pm', 'architect', 'analyst',
-  'data-engineer', 'devops', 'aiox-master', 'ux-design-expert'
+  'dev',
+  'po',
+  'sm',
+  'pm',
+  'architect',
+  'analyst',
+  'data-engineer',
+  'devops',
+  'aiox-master',
+  'ux-design-expert',
 ];
 
 const NEW_STEP_3_TEMPLATE = `  - STEP 3: |
@@ -814,28 +859,27 @@ const NEW_STEP_3_TEMPLATE = `  - STEP 3: |
 
 function updateAgent(agentId) {
   const filePath = path.join(AGENTS_DIR, `${agentId}.md`);
-  
+
   if (!fs.existsSync(filePath)) {
     console.error(`❌ Agent file not found: ${filePath}`);
     return false;
   }
-  
+
   let content = fs.readFileSync(filePath, 'utf8');
-  
+
   // Find and replace STEP 3
   const step3Pattern = /  - STEP 3: \|[\s\S]*?(?=  - STEP 4:|$)/;
-  
+
   // Get agent icon and name from file for fallback
   const iconMatch = content.match(/icon:\s*(.+)/);
   const nameMatch = content.match(/name:\s*(.+)/);
   const icon = iconMatch ? iconMatch[1].trim() : '🤖';
   const name = nameMatch ? nameMatch[1].trim() : agentId;
-  
-  const newStep3 = NEW_STEP_3_TEMPLATE
-    .replace(/{agent-id}/g, agentId)
+
+  const newStep3 = NEW_STEP_3_TEMPLATE.replace(/{agent-id}/g, agentId)
     .replace('{icon}', icon)
     .replace('{name}', name);
-  
+
   if (step3Pattern.test(content)) {
     content = content.replace(step3Pattern, newStep3);
     fs.writeFileSync(filePath, content, 'utf8');
@@ -861,6 +905,7 @@ console.log(`📊 Total: ${updated + 1} agents (including QA pilot)`);
 ```
 
 **Validation:**
+
 - ✅ All 10 remaining agents updated
 - ✅ STEP 3 replaced correctly
 - ✅ Agent IDs correctly inserted
@@ -868,6 +913,7 @@ console.log(`📊 Total: ${updated + 1} agents (including QA pilot)`);
 - ✅ Fallback instructions included
 
 **Quick Validation Test:**
+
 ```bash
 # Test each agent activation
 for agent in dev po sm pm architect analyst data-engineer devops aiox-master ux-design-expert; do
@@ -892,10 +938,10 @@ Create `.aiox-core/scripts/command-execution-hook.js`:
 ```javascript
 /**
  * Command Execution Hook
- * 
+ *
  * Updates session state after command execution to maintain
  * accurate session context for future agent activations.
- * 
+ *
  * Part of Story 6.1.4: Unified Greeting System Integration
  */
 
@@ -903,15 +949,15 @@ const SessionContextLoader = require('./session-context-loader');
 
 /**
  * Update session state after command execution
- * 
+ *
  * Should be called after each command execution to maintain
  * accurate session context for future agent activations.
- * 
+ *
  * @param {string} agentId - Agent ID executing the command
  * @param {string} agentName - Agent name (for display)
  * @param {string} command - Command name executed
  * @returns {void}
- * 
+ *
  * @example
  * updateSessionAfterCommand('qa', 'Quinn', 'analyze-framework');
  */
@@ -929,6 +975,7 @@ module.exports = { updateSessionAfterCommand };
 ```
 
 **Note:** This hook is created but not automatically integrated. Integration requires:
+
 - Modifying task execution system (future story)
 - Or manual calls in critical commands (documentation)
 
@@ -944,7 +991,7 @@ module.exports = { updateSessionAfterCommand };
 
 Create `.aiox-core/docs/session-update-pattern.md`:
 
-```markdown
+````markdown
 # Session Update Pattern
 
 ## Overview
@@ -959,6 +1006,7 @@ const { updateSessionAfterCommand } = require('./command-execution-hook');
 // After command execution
 updateSessionAfterCommand('qa', 'Quinn', 'analyze-framework');
 ```
+````
 
 ## Integration Points
 
@@ -969,9 +1017,11 @@ updateSessionAfterCommand('qa', 'Quinn', 'analyze-framework');
 ## Future Integration
 
 Automatic integration will be added in future story:
+
 - Task execution system will call hook automatically
 - Command execution system will call hook automatically
-```
+
+````
 
 ---
 
@@ -996,25 +1046,25 @@ describe('generateGreeting', () => {
     expect(greeting).toContain('Quinn');
     expect(greeting).toContain('ready');
   });
-  
+
   it('should fallback for invalid agent', async () => {
     const greeting = await generateGreeting('invalid-agent');
     expect(greeting).toContain('Agent ready');
     expect(greeting).toContain('*help');
   });
-  
+
   it('should include project status when git configured', async () => {
     const greeting = await generateGreeting('dev');
     // May or may not include project status depending on git config
     expect(greeting).toBeTruthy();
   });
-  
+
   it('should respect user preferences', async () => {
     // Test with different preferences
     // Requires mocking GreetingPreferenceManager
   });
 });
-```
+````
 
 **Task 6.2: Integration Tests (2 hours)**
 
@@ -1034,19 +1084,19 @@ describe('Greeting System Integration', () => {
     // 4. Generate greeting
     // 5. Verify output
   });
-  
+
   it('should handle new session correctly', async () => {
     // Clear session state
     // Generate greeting
     // Verify "new" session type detected
   });
-  
+
   it('should handle existing session correctly', async () => {
     // Create session state
     // Generate greeting
     // Verify "existing" session type detected
   });
-  
+
   it('should update session state after command', async () => {
     // Execute command
     // Update session
@@ -1101,10 +1151,12 @@ describe('Greeting System Integration', () => {
 ### Specialized Agent Assignment
 
 **Primary Agents:**
+
 - @dev: Core implementation, code quality, integration safety
 - @architect: Architecture validation, pattern compliance
 
 **Supporting Agents:**
+
 - @qa: Story validation, test coverage verification
 
 ### Quality Gate Tasks
@@ -1113,22 +1165,22 @@ describe('Greeting System Integration', () => {
   - Focus: Code quality, error handling, fallback mechanisms
   - Validate: All error paths have fallbacks
   - Check: Performance targets met (<50ms cache, <150ms no cache)
-  
 - [ ] **Pre-PR (@dev):** Run before creating pull request
   - Focus: Integration safety, backward compatibility
   - Validate: No breaking changes to existing agent activation
   - Check: All 11 agents still activate correctly
-  
 - [ ] **Pre-Deployment:** N/A (Infrastructure story, no production deployment)
 
 ### CodeRabbit Focus Areas
 
 **Primary Focus:**
+
 - **Error Handling:** Try-catch blocks, fallback mechanisms, graceful degradation
 - **Performance:** Caching strategies, timeout protection, parallel loading
 - **Integration:** Component interaction patterns, context passing, session state management
 
 **Secondary Focus:**
+
 - **Code Quality:** Method naming, documentation, validation logic
 - **Backward Compatibility:** Existing agent activation still works, no breaking changes
 - **Testing:** Unit test coverage, integration test scenarios, performance benchmarks
@@ -1136,6 +1188,7 @@ describe('Greeting System Integration', () => {
 **Specific Patterns to Validate:**
 
 1. **Error Handling Pattern:**
+
    ```javascript
    // All async operations must have try-catch
    try {
@@ -1148,6 +1201,7 @@ describe('Greeting System Integration', () => {
    ```
 
 2. **Performance Pattern:**
+
    ```javascript
    // Cache checks before expensive operations
    if (cache.has(key) && !isExpired(cache.get(key))) {
@@ -1159,8 +1213,8 @@ describe('Greeting System Integration', () => {
    ```javascript
    // Pre-loaded context prevents duplicate loading
    const context = {
-     sessionType: preLoadedSessionType || await detectSessionType(),
-     projectStatus: preLoadedProjectStatus || await loadProjectStatus()
+     sessionType: preLoadedSessionType || (await detectSessionType()),
+     projectStatus: preLoadedProjectStatus || (await loadProjectStatus()),
    };
    ```
 
@@ -1232,14 +1286,16 @@ describe('Greeting System Integration', () => {
 ## ⚠️ Risks & Mitigation
 
 ### Risk 1: Agent definition loading fails
+
 - **Likelihood:** Low
 - **Impact:** High
-- **Mitigation:** 
+- **Mitigation:**
   - Validation and normalization
   - Fallback to simple greeting
   - Error logging
 
 ### Risk 2: Performance degradation
+
 - **Likelihood:** Low
 - **Impact:** Medium
 - **Mitigation:**
@@ -1249,6 +1305,7 @@ describe('Greeting System Integration', () => {
   - Performance logging
 
 ### Risk 3: Breaking existing functionality
+
 - **Likelihood:** Low
 - **Impact:** High
 - **Mitigation:**
@@ -1308,7 +1365,7 @@ describe('Greeting System Integration', () => {
 ## 🔗 Related Documents
 
 - **Epic:** [Epic-6.1](../epics/epic-6.1.md)
-- **Prerequisites:** 
+- **Prerequisites:**
   - Story 6.1.1 - Agent Persona Definitions ✅
   - Story 6.1.2.4 - Project Status Context ✅
   - Story 6.1.2.5 - Contextual Agent Load Integration ✅
@@ -1326,16 +1383,19 @@ describe('Greeting System Integration', () => {
 ### After Implementation
 
 **User activates agent:**
+
 ```bash
 /AIOX/agents/qa
 ```
 
 **Agent STEP 3 executes:**
+
 ```bash
 node .aiox-core/scripts/generate-greeting.js qa
 ```
 
 **Output:**
+
 ```
 ✅ Quinn (Guardian) ready. Let's ensure quality!
 
@@ -1353,6 +1413,7 @@ node .aiox-core/scripts/generate-greeting.js qa
 ```
 
 **If execution fails:**
+
 ```
 ✅ qa Agent ready
 
@@ -1363,19 +1424,19 @@ Type *help to see available commands.
 
 ## 📝 Change Log
 
-| Date | Version | Changes | Author |
-|------|---------|---------|--------|
-| 2025-01-17 | 4.1 | Added CodeRabbit Integration section, clarified migration scripts deletion process, verified test directory structure | Pax (po) |
-| 2025-01-17 | 4.0 | Expanded to unified system integration, integrated all analyses, added script consolidation, added session updates | Pax (po) + Aria (architect) |
-| 2025-01-16 | 3.0 | Validation improvements, integration tests added | Pax (po) |
-| 2025-01-15 | 2.0 | Major rewrite to integrate with Story 6.1.2.5 | Quinn (qa) |
-| 2025-01-14 | 1.0 | Initial story creation | Unknown |
+| Date       | Version | Changes                                                                                                               | Author                      |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 2025-01-17 | 4.1     | Added CodeRabbit Integration section, clarified migration scripts deletion process, verified test directory structure | Pax (po)                    |
+| 2025-01-17 | 4.0     | Expanded to unified system integration, integrated all analyses, added script consolidation, added session updates    | Pax (po) + Aria (architect) |
+| 2025-01-16 | 3.0     | Validation improvements, integration tests added                                                                      | Pax (po)                    |
+| 2025-01-15 | 2.0     | Major rewrite to integrate with Story 6.1.2.5                                                                         | Quinn (qa)                  |
+| 2025-01-14 | 1.0     | Initial story creation                                                                                                | Unknown                     |
 
 ---
 
-**Status:** 📋 Ready to Start  
-**Next Steps:** Begin Phase 1 - Script Consolidation  
-**Estimated Completion:** 2.5 days
+**Status:** 📦 Archived (Governance Migrated)  
+**Next Steps:** Use canonical record in `docs/stories/completed/`  
+**Estimated Completion:** Historical artifact
 
 ---
 
@@ -1384,6 +1445,7 @@ Type *help to see available commands.
 **Rationale:** Use QA agent as pilot to validate system before applying to all agents. This prevents wasting time and tokens on agents that may have issues.
 
 **Approach:**
+
 1. ✅ Implement all infrastructure (Phases 1-3)
 2. ✅ Update only QA agent first (Phase 4.1)
 3. ✅ Test QA agent thoroughly (Phase 4.2)
@@ -1391,14 +1453,15 @@ Type *help to see available commands.
 5. ✅ Apply to remaining 10 agents only after QA validated (Phase 4.3)
 
 **Benefits:**
+
 - 🎯 Catch issues early with single agent
 - 🎯 Validate approach before scaling
 - 🎯 Save time and tokens
 - 🎯 Build confidence before full rollout
 
 **QA Agent Selection:**
+
 - ✅ Well-defined persona and commands
 - ✅ Used frequently (good for testing)
 - ✅ Representative of other agents
 - ✅ Easy to validate output quality
-

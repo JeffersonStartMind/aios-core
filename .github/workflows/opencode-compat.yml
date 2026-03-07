@@ -6,6 +6,8 @@ on:
       - opencode-compat-validation
     paths:
       - '.aiox-core/infrastructure/scripts/validate-opencode-integration.js'
+      - '.aiox-core/infrastructure/scripts/validate-opencode-compatibility.js'
+      - '.aiox-core/infrastructure/scripts/opencode-doctor.js'
       - '.aiox-core/infrastructure/scripts/ide-sync/**'
       - '.github/workflows/opencode-compat.yml'
       - 'package.json'
@@ -15,11 +17,15 @@ on:
       - '.cursor/rules/**'
       - '.codex/**'
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
   pull_request:
     branches:
       - main
     paths:
       - '.aiox-core/infrastructure/scripts/validate-opencode-integration.js'
+      - '.aiox-core/infrastructure/scripts/validate-opencode-compatibility.js'
+      - '.aiox-core/infrastructure/scripts/opencode-doctor.js'
       - '.aiox-core/infrastructure/scripts/ide-sync/**'
       - '.github/workflows/opencode-compat.yml'
       - 'package.json'
@@ -90,3 +96,30 @@ jobs:
             exit 1
           fi
           echo "OpenCode compatibility checks passed on Linux and Windows"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate observability summary
+        run: npm run validate:integration -- --iterations 3 --retries 2 --json --output reports/opencode-observability-summary.json
+
+      - name: Evaluate SLO alerts
+        run: |
+          node -e "const fs=require('fs'); const file='reports/opencode-observability-summary.json'; const summary=JSON.parse(fs.readFileSync(file,'utf8')); const active=(summary.alerts||[]).filter((a)=>a.status==='alert'); const critical=active.filter((a)=>a.severity==='critical'); console.log('Active alerts:', active.length); for (const alert of active) { console.log('-', alert.id, alert.severity, alert.message); } if (critical.length > 0) { process.exit(1); }"
+
+      - name: Upload observability dashboard artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-observability-dashboard
+          path: reports/opencode-observability-summary.json

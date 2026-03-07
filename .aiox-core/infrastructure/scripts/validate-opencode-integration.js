@@ -13,6 +13,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto');
+
+const ERROR_CODES = {
+  PATH_ESCAPE: 'OCI_PATH_ESCAPE',
+  MISSING_AGENTS_DIR: 'OCI_MISSING_AGENTS_DIR',
+  MISSING_COMMANDS_DIR: 'OCI_MISSING_COMMANDS_DIR',
+  AGENT_COUNT_MISMATCH: 'OCI_AGENT_COUNT_MISMATCH',
+  COMMAND_COUNT_MISMATCH: 'OCI_COMMAND_COUNT_MISMATCH',
+  MISSING_YAML_FRONTMATTER: 'OCI_MISSING_YAML_FRONTMATTER',
+};
 
 const SECRET_PATTERNS = [
   /(api[_-]?key\s*[:=]\s*)([^\s]+)/gi,
@@ -54,6 +64,43 @@ function parseArgs(argv = process.argv.slice(2)) {
   };
 }
 
+function createSessionId() {
+  return `sess-${process.pid}-${Date.now()}`;
+}
+
+function createCorrelationId() {
+  return randomUUID();
+}
+
+function withCode(code, message) {
+  return `[${code}] ${redactSecrets(message)}`;
+}
+
+function emitStructuredLog(event) {
+  if (!event || event.enabled === false) {
+    return;
+  }
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    level: event.level || 'info',
+    component: event.component || 'opencode.integration',
+    command: event.command || 'validate:opencode-integration',
+    session_id: event.sessionId || null,
+    correlation_id: event.correlationId || null,
+    duration_ms: Number.isFinite(event.durationMs) ? event.durationMs : 0,
+    result: event.result || 'unknown',
+    error_code: event.errorCode || 'OK',
+    message: event.message || '',
+  };
+
+  if (event.metadata !== undefined) {
+    payload.metadata = event.metadata;
+  }
+
+  process.stderr.write(`${JSON.stringify(payload)}\n`);
+}
+
 function countMarkdownFiles(dirPath) {
   if (!fs.existsSync(dirPath)) return 0;
   return fs.readdirSync(dirPath).filter((f) => f.endsWith('.md')).length;
@@ -73,7 +120,11 @@ function isPathInsideRoot(rootPath, candidatePath) {
 }
 
 function validateOpencodeIntegration(options = {}) {
+  const start = Date.now();
   const projectRoot = options.projectRoot || process.cwd();
+  const sessionId = options.sessionId || process.env.AIOX_SESSION_ID || createSessionId();
+  const correlationId =
+    options.correlationId || process.env.AIOX_CORRELATION_ID || createCorrelationId();
   const resolved = {
     ...getDefaultOptions(),
     ...options,
@@ -86,6 +137,37 @@ function validateOpencodeIntegration(options = {}) {
   const errors = [];
   const warnings = [];
 
+  const dirCache = new Map();
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
+  function listDirCached(dirPath) {
+    if (dirCache.has(dirPath)) {
+      cacheHits += 1;
+      return dirCache.get(dirPath);
+    }
+    cacheMisses += 1;
+    if (!fs.existsSync(dirPath)) {
+      dirCache.set(dirPath, null);
+      return null;
+    }
+    const entries = fs.readdirSync(dirPath);
+    dirCache.set(dirPath, entries);
+    return entries;
+  }
+
+  const countMarkdownCached = (dirPath) => {
+    const entries = listDirCached(dirPath);
+    if (!entries) return 0;
+    return entries.filter((f) => f.endsWith('.md')).length;
+  };
+
+  const countCommandsCached = (commandsDir) => {
+    const entries = listDirCached(commandsDir);
+    if (!entries) return 0;
+    return entries.filter((f) => f.startsWith('aiox-') && f.endsWith('.md')).length;
+  };
+
   // Security: workspace isolation (prevent path escape)
   const guardedDirs = [
     { key: 'agentsDir', value: resolved.agentsDir },
@@ -95,7 +177,8 @@ function validateOpencodeIntegration(options = {}) {
   for (const dir of guardedDirs) {
     if (!isPathInsideRoot(resolved.projectRoot, dir.value)) {
       errors.push(
-        redactSecrets(
+        withCode(
+          ERROR_CODES.PATH_ESCAPE,
           `Path for '${dir.key}' escapes project root and is not allowed: ${path.relative(resolved.projectRoot, dir.value)}`
         )
       );
@@ -105,7 +188,8 @@ function validateOpencodeIntegration(options = {}) {
   // Check .opencode/agents/ directory
   if (!fs.existsSync(resolved.agentsDir)) {
     errors.push(
-      redactSecrets(
+      withCode(
+        ERROR_CODES.MISSING_AGENTS_DIR,
         `Missing OpenCode agents dir: ${path.relative(resolved.projectRoot, resolved.agentsDir)} — run 'npm run sync:ide:opencode'`
       )
     );
@@ -114,20 +198,22 @@ function validateOpencodeIntegration(options = {}) {
   // Check .opencode/commands/ directory
   if (!fs.existsSync(resolved.commandsDir)) {
     errors.push(
-      redactSecrets(
+      withCode(
+        ERROR_CODES.MISSING_COMMANDS_DIR,
         `Missing OpenCode commands dir: ${path.relative(resolved.projectRoot, resolved.commandsDir)} — run 'npm run sync:ide:opencode'`
       )
     );
   }
 
-  const sourceCount = countMarkdownFiles(resolved.sourceAgentsDir);
-  const agentsCount = countMarkdownFiles(resolved.agentsDir);
-  const commandsCount = countCommandFiles(resolved.commandsDir);
+  const sourceCount = countMarkdownCached(resolved.sourceAgentsDir);
+  const agentsCount = countMarkdownCached(resolved.agentsDir);
+  const commandsCount = countCommandsCached(resolved.commandsDir);
 
   // Agent count parity
   if (sourceCount > 0 && agentsCount !== sourceCount) {
     warnings.push(
-      redactSecrets(
+      withCode(
+        ERROR_CODES.AGENT_COUNT_MISMATCH,
         `OpenCode agent count differs from source (${agentsCount}/${sourceCount}) — run 'npm run sync:ide:opencode'`
       )
     );
@@ -136,7 +222,8 @@ function validateOpencodeIntegration(options = {}) {
   // Command count parity (should equal source agents)
   if (sourceCount > 0 && commandsCount !== sourceCount) {
     warnings.push(
-      redactSecrets(
+      withCode(
+        ERROR_CODES.COMMAND_COUNT_MISMATCH,
         `OpenCode command count differs from source (${commandsCount}/${sourceCount}) — run 'npm run sync:ide:opencode'`
       )
     );
@@ -153,11 +240,16 @@ function validateOpencodeIntegration(options = {}) {
       const content = fs.readFileSync(sampleFile, 'utf8');
       if (!content.startsWith('---')) {
         errors.push(
-          redactSecrets(`OpenCode command file '${files[0]}' is missing YAML frontmatter`)
+          withCode(
+            ERROR_CODES.MISSING_YAML_FRONTMATTER,
+            `OpenCode command file '${files[0]}' is missing YAML frontmatter`
+          )
         );
       }
     }
   }
+
+  const durationMs = Date.now() - start;
 
   return {
     ok: errors.length === 0,
@@ -167,6 +259,16 @@ function validateOpencodeIntegration(options = {}) {
       sourceAgents: sourceCount,
       opencodeAgents: agentsCount,
       opencodeCommands: commandsCount,
+      durationMs,
+      io: {
+        cacheHits,
+        cacheMisses,
+      },
+    },
+    observability: {
+      sessionId,
+      correlationId,
+      component: 'opencode.integration',
     },
   };
 }
@@ -193,7 +295,28 @@ function formatHumanReport(result) {
 
 function main() {
   const args = parseArgs();
-  const result = validateOpencodeIntegration(args);
+  const sessionId = process.env.AIOX_SESSION_ID || createSessionId();
+  const correlationId = process.env.AIOX_CORRELATION_ID || createCorrelationId();
+  const result = validateOpencodeIntegration({
+    ...args,
+    sessionId,
+    correlationId,
+  });
+
+  emitStructuredLog({
+    level: result.ok ? 'info' : 'error',
+    sessionId,
+    correlationId,
+    durationMs: result.metrics.durationMs,
+    result: result.ok ? 'success' : 'failed',
+    errorCode: result.ok ? 'OK' : 'VALIDATION_FAILED',
+    message: 'OpenCode integration validation finished',
+    metadata: {
+      errors: result.errors.length,
+      warnings: result.warnings.length,
+      io: result.metrics.io,
+    },
+  });
 
   if (!args.quiet) {
     if (args.json) {
@@ -220,4 +343,9 @@ module.exports = {
   countCommandFiles,
   isPathInsideRoot,
   redactSecrets,
+  createSessionId,
+  createCorrelationId,
+  emitStructuredLog,
+  withCode,
+  ERROR_CODES,
 };

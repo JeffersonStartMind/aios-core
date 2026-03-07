@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "sync": {
+    "ok": true,
+    "exitCode": 0,
+    "signal": null,
+    "durationMs": 676,
+    "timedOut": false,
+    "blockedPrivilegedCommand": false,
+    "dependencyUnavailable": false,
+    "errorCode": "OK",
+    "message": "",
+    "commandLine": "npm run validate:opencode-sync"
+  },
+  "integration": {
+    "runs": 2,
+    "failures": 0,
+    "successRate": 1,
+    "p50Ms": 459,
+    "p95Ms": 512,
+    "avgMs": 486,
+    "throughputRunsPerMinute": 123.58,
+    "flakinessRate": 0,
+    "retriesUsed": 0,
+    "timedOutRuns": 0,
+    "blockedPrivilegedRuns": 0,
+    "dependencyUnavailableRuns": 0,
+    "failureCodes": {}
+  },
+  "environment": {
+    "node": "v22.20.0",
+    "platform": "win32",
+    "pid": 21068
+  },
+  "resources": {
+    "memoryRssMb": 43,
+    "cpuUserMs": 31,
+    "cpuSystemMs": 62
+  },
+  "targets": {
+    "successRate": 0.99,
+    "p95Ms": 2000,
+    "flakinessRate": 0.02,
+    "timedOutRuns": 0
+  },
+  "alerts": [
+    {
+      "id": "opencode-sync",
+      "severity": "critical",
+      "status": "ok",
+      "threshold": "sync must pass",
+      "actual": "pass",
+      "message": "OpenCode sync validation passed"
+    },
+    {
+      "id": "success-rate",
+      "severity": "high",
+      "status": "ok",
+      "threshold": ">= 99%",
+      "actual": "100.00%",
+      "message": "Success rate within SLO"
+    },
+    {
+      "id": "p95-latency",
+      "severity": "medium",
+      "status": "ok",
+      "threshold": "<= 2000ms",
+      "actual": "512ms",
+      "message": "P95 latency within SLO"
+    },
+    {
+      "id": "flakiness",
+      "severity": "medium",
+      "status": "ok",
+      "threshold": "<= 2.00%",
+      "actual": "0.00%",
+      "message": "Flakiness under control"
+    },
+    {
+      "id": "timeouts",
+      "severity": "high",
+      "status": "ok",
+      "threshold": "<= 0",
+      "actual": "0",
+      "message": "No timeout alerts"
+    },
+    {
+      "id": "dependency-availability",
+      "severity": "critical",
+      "status": "ok",
+      "threshold": "= 0",
+      "actual": "0",
+      "message": "Dependencies available"
+    }
+  ],
+  "session": {
+    "sessionId": "sess-21068-1772846370872",
+    "correlationId": "a0231527-8b7b-436c-9e3b-87fb9be5f28a"
+  }
+}

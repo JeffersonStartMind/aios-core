@@ -197,7 +197,7 @@ describe('TerminalSpawner', () => {
 
       try {
         await expect(TerminalSpawner.pollForOutput(outputPath, 600)).rejects.toThrow(
-          /Timeout waiting for agent output/,
+          /Timeout waiting for agent output/
         );
       } finally {
         await fs.unlink(lockPath).catch(() => {});
@@ -284,7 +284,7 @@ describe('TerminalSpawner', () => {
   describe('spawnAgent Validation', () => {
     test('should reject invalid agent ID', async () => {
       await expect(TerminalSpawner.spawnAgent('', 'develop')).rejects.toThrow(
-        /Agent ID is required/,
+        /Agent ID is required/
       );
     });
 
@@ -294,13 +294,13 @@ describe('TerminalSpawner', () => {
 
     test('should reject agent ID with invalid characters', async () => {
       await expect(TerminalSpawner.spawnAgent('dev@123', 'develop')).rejects.toThrow(
-        /Invalid agent ID format/,
+        /Invalid agent ID format/
       );
     });
 
     test('should reject task with invalid characters', async () => {
       await expect(TerminalSpawner.spawnAgent('dev', 'develop!test')).rejects.toThrow(
-        /Invalid task format/,
+        /Invalid task format/
       );
     });
 
@@ -352,10 +352,13 @@ describe('TerminalSpawner', () => {
 // pm.sh Script Tests (Task 6.2)
 // ============================================
 describe('pm.sh Script', () => {
-  const { execSync } = require('child_process');
+  const { execSync, spawnSync } = require('child_process');
   const scriptPath = TerminalSpawner.getScriptPath();
+  const bashCheck = spawnSync('bash', ['--version'], { encoding: 'utf8' });
+  const hasUsableBash = bashCheck.status === 0;
+  const testIfBash = hasUsableBash ? test : test.skip;
 
-  test('should display help with --help flag', () => {
+  testIfBash('should display help with --help flag', () => {
     const result = execSync(`bash "${scriptPath}" --help`, { encoding: 'utf8' });
     expect(result).toContain('AIOX Multi-Modal Orchestration Script');
     expect(result).toContain('Usage:');
@@ -363,13 +366,13 @@ describe('pm.sh Script', () => {
     expect(result).toContain('Options:');
   });
 
-  test('should display version with --version flag', () => {
+  testIfBash('should display version with --version flag', () => {
     const result = execSync(`bash "${scriptPath}" --version`, { encoding: 'utf8' });
     expect(result).toContain('version');
     expect(result).toMatch(/\d+\.\d+\.\d+/);
   });
 
-  test('should fail with missing arguments', () => {
+  testIfBash('should fail with missing arguments', () => {
     try {
       execSync(`bash "${scriptPath}"`, { encoding: 'utf8', stdio: 'pipe' });
       fail('Should have thrown an error');
@@ -378,7 +381,7 @@ describe('pm.sh Script', () => {
     }
   });
 
-  test('should fail with only agent argument', () => {
+  testIfBash('should fail with only agent argument', () => {
     try {
       execSync(`bash "${scriptPath}" dev`, { encoding: 'utf8', stdio: 'pipe' });
       fail('Should have thrown an error');
@@ -387,7 +390,7 @@ describe('pm.sh Script', () => {
     }
   });
 
-  test('should fail with non-existent context file', () => {
+  testIfBash('should fail with non-existent context file', () => {
     try {
       execSync(`bash "${scriptPath}" dev develop --context /nonexistent/file.json`, {
         encoding: 'utf8',

@@ -71,6 +71,7 @@
     "validate:opencode-sync": "node .aiox-core/infrastructure/scripts/ide-sync/index.js validate --ide opencode --strict",
     "validate:opencode-integration": "node .aiox-core/infrastructure/scripts/validate-opencode-integration.js",
     "validate:integration": "node .aiox-core/infrastructure/scripts/validate-opencode-compatibility.js",
+    "doctor:opencode": "node .aiox-core/infrastructure/scripts/opencode-doctor.js",
     "validate:gemini-integration": "node .aiox-core/infrastructure/scripts/validate-gemini-integration.js",
     "sync:skills:codex": "node .aiox-core/infrastructure/scripts/codex-skills-sync/index.js",
     "sync:skills:codex:global": "node .aiox-core/infrastructure/scripts/codex-skills-sync/index.js --global --global-only",

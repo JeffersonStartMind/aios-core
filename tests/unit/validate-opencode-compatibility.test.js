@@ -5,8 +5,11 @@ const {
   hasPrivilegedToken,
   runCommand,
   runWithRetries,
+  computeBackoffDelay,
   percentile,
   buildSummary,
+  MAX_RETRIES,
+  ERROR_CODES,
 } = require('../../.aiox-core/infrastructure/scripts/validate-opencode-compatibility');
 
 describe('validate-opencode-compatibility', () => {
@@ -17,23 +20,51 @@ describe('validate-opencode-compatibility', () => {
         json: false,
         retries: 0,
         timeoutMs: 30000,
+        backoffMs: 250,
+        maxBackoffMs: 3000,
+        jitterMs: 150,
+        outputPath: null,
       });
     });
 
     it('parses iterations and json flags', () => {
       expect(
-        parseArgs(['--iterations', '3', '--json', '--retries', '1', '--timeout-ms', '8000'])
+        parseArgs([
+          '--iterations',
+          '3',
+          '--json',
+          '--retries',
+          '1',
+          '--timeout-ms',
+          '8000',
+          '--backoff-ms',
+          '100',
+          '--max-backoff-ms',
+          '1500',
+          '--jitter-ms',
+          '50',
+          '--output',
+          'reports/summary.json',
+        ])
       ).toEqual({
         iterations: 3,
         json: true,
         retries: 1,
         timeoutMs: 8000,
+        backoffMs: 100,
+        maxBackoffMs: 1500,
+        jitterMs: 50,
+        outputPath: 'reports/summary.json',
       });
       expect(parseArgs(['-n', '2', '-r', '2'])).toEqual({
         iterations: 2,
         json: false,
         retries: 2,
         timeoutMs: 30000,
+        backoffMs: 250,
+        maxBackoffMs: 3000,
+        jitterMs: 150,
+        outputPath: null,
       });
     });
 
@@ -41,6 +72,9 @@ describe('validate-opencode-compatibility', () => {
       expect(() => parseArgs(['--iterations', '0'])).toThrow('Invalid --iterations value');
       expect(() => parseArgs(['-n', 'abc'])).toThrow('Invalid --iterations value');
       expect(() => parseArgs(['--retries', '-1'])).toThrow('Invalid --retries value');
+      expect(() => parseArgs(['--retries', String(MAX_RETRIES + 1)])).toThrow(
+        'Invalid --retries value'
+      );
       expect(() => parseArgs(['--timeout-ms', '0'])).toThrow('Invalid --timeout-ms value');
     });
   });
@@ -50,6 +84,7 @@ describe('validate-opencode-compatibility', () => {
       const result = runWithRetries('node', ['-e', 'process.exit(0)'], {
         retries: 2,
         timeoutMs: 5000,
+        sleepFn: () => {},
       });
       expect(result.ok).toBe(true);
       expect(result.retriesUsed).toBe(0);
@@ -60,10 +95,58 @@ describe('validate-opencode-compatibility', () => {
       const result = runWithRetries('node', ['-e', 'process.exit(1)'], {
         retries: 2,
         timeoutMs: 5000,
+        backoffMs: 1,
+        maxBackoffMs: 2,
+        jitterMs: 0,
+        sleepFn: () => {},
+        randomFn: () => 0,
       });
       expect(result.ok).toBe(false);
       expect(result.retriesUsed).toBe(2);
       expect(result.attempts.length).toBe(3);
+    });
+
+    it('does not retry when command dependency is unavailable', () => {
+      const result = runWithRetries('__definitely_missing_command__', ['--version'], {
+        retries: 3,
+        timeoutMs: 1000,
+        sleepFn: () => {},
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.dependencyUnavailable).toBe(true);
+      expect(result.retriesUsed).toBe(0);
+      expect(result.attempts.length).toBe(1);
+      expect(result.errorCode).toBe(ERROR_CODES.DEPENDENCY_UNAVAILABLE);
+    });
+  });
+
+  describe('computeBackoffDelay', () => {
+    it('applies exponential backoff with upper bound', () => {
+      expect(
+        computeBackoffDelay(1, {
+          backoffMs: 100,
+          maxBackoffMs: 500,
+          jitterMs: 0,
+          randomFn: () => 0,
+        })
+      ).toBe(100);
+      expect(
+        computeBackoffDelay(2, {
+          backoffMs: 100,
+          maxBackoffMs: 500,
+          jitterMs: 0,
+          randomFn: () => 0,
+        })
+      ).toBe(200);
+      expect(
+        computeBackoffDelay(5, {
+          backoffMs: 100,
+          maxBackoffMs: 500,
+          jitterMs: 0,
+          randomFn: () => 0,
+        })
+      ).toBe(500);
     });
   });
 
@@ -78,6 +161,7 @@ describe('validate-opencode-compatibility', () => {
       const result = runCommand('sudo', ['npm', 'test'], { timeoutMs: 5000 });
       expect(result.ok).toBe(false);
       expect(result.blockedPrivilegedCommand).toBe(true);
+      expect(result.errorCode).toBe(ERROR_CODES.PRIVILEGED_BLOCKED);
     });
   });
 
@@ -108,6 +192,9 @@ describe('validate-opencode-compatibility', () => {
       expect(summary.integration.avgMs).toBe(1000);
       expect(summary.integration.retriesUsed).toBe(0);
       expect(summary.integration.timedOutRuns).toBe(0);
+      expect(summary.integration.throughputRunsPerMinute).toBeGreaterThan(0);
+      expect(summary.alerts).toBeDefined();
+      expect(Array.isArray(summary.alerts)).toBe(true);
     });
 
     it('marks summary as failed when sync or runs fail', () => {
@@ -122,6 +209,7 @@ describe('validate-opencode-compatibility', () => {
       expect(summary.integration.failures).toBe(1);
       expect(summary.integration.runs).toBe(2);
       expect(summary.integration.retriesUsed).toBe(0);
+      expect(summary.alerts.some((alert) => alert.id === 'success-rate')).toBe(true);
     });
   });
 });

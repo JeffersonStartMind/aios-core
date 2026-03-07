@@ -16,10 +16,20 @@ const fs = require('fs');
 // We need to mock fs for degradation tests but use real fs for loading tests
 // Use a strategy: create temp YAML files for test fixtures
 
-const { RegistryProvider, LAYER_PRIORITY } = require('../../../.aiox-core/core/code-intel/providers/registry-provider');
-const { CodeIntelProvider } = require('../../../.aiox-core/core/code-intel/providers/provider-interface');
-const { CodeGraphProvider } = require('../../../.aiox-core/core/code-intel/providers/code-graph-provider');
-const { CodeIntelClient, CB_CLOSED } = require('../../../.aiox-core/core/code-intel/code-intel-client');
+const {
+  RegistryProvider,
+  LAYER_PRIORITY,
+} = require('../../../.aiox-core/core/code-intel/providers/registry-provider');
+const {
+  CodeIntelProvider,
+} = require('../../../.aiox-core/core/code-intel/providers/provider-interface');
+const {
+  CodeGraphProvider,
+} = require('../../../.aiox-core/core/code-intel/providers/code-graph-provider');
+const {
+  CodeIntelClient,
+  CB_CLOSED,
+} = require('../../../.aiox-core/core/code-intel/code-intel-client');
 
 jest.setTimeout(30000);
 
@@ -32,6 +42,19 @@ const MALFORMED_REGISTRY_PATH = path.join(FIXTURES_DIR, 'malformed-registry.yaml
 const DUPLICATES_REGISTRY_PATH = path.join(FIXTURES_DIR, 'duplicates-registry.yaml');
 const UNRESOLVED_DEPS_PATH = path.join(FIXTURES_DIR, 'unresolved-deps-registry.yaml');
 
+function removePathWithRetries(targetPath) {
+  if (!fs.existsSync(targetPath)) {
+    return;
+  }
+
+  fs.rmSync(targetPath, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100,
+  });
+}
+
 beforeAll(() => {
   // Create fixtures directory
   if (!fs.existsSync(FIXTURES_DIR)) {
@@ -39,7 +62,9 @@ beforeAll(() => {
   }
 
   // Valid registry with multiple categories
-  fs.writeFileSync(VALID_REGISTRY_PATH, `
+  fs.writeFileSync(
+    VALID_REGISTRY_PATH,
+    `
 entities:
   tasks:
     create-story:
@@ -114,22 +139,31 @@ entities:
         - provider
       usedBy: []
       dependencies: []
-`);
+`
+  );
 
   // Empty registry
-  fs.writeFileSync(EMPTY_REGISTRY_PATH, `
+  fs.writeFileSync(
+    EMPTY_REGISTRY_PATH,
+    `
 entities: {}
-`);
+`
+  );
 
   // Malformed YAML
-  fs.writeFileSync(MALFORMED_REGISTRY_PATH, `
+  fs.writeFileSync(
+    MALFORMED_REGISTRY_PATH,
+    `
 entities:
   this is not: [valid yaml
   because: {it has: broken: syntax
-`);
+`
+  );
 
   // Registry with duplicate entity names (like real 35 duplicates)
-  fs.writeFileSync(DUPLICATES_REGISTRY_PATH, `
+  fs.writeFileSync(
+    DUPLICATES_REGISTRY_PATH,
+    `
 entities:
   tasks:
     yaml-validator:
@@ -236,10 +270,13 @@ entities:
         - template
       usedBy: []
       dependencies: []
-`);
+`
+  );
 
   // Registry with unresolvable dependencies
-  fs.writeFileSync(UNRESOLVED_DEPS_PATH, `
+  fs.writeFileSync(
+    UNRESOLVED_DEPS_PATH,
+    `
 entities:
   tasks:
     task-a:
@@ -270,18 +307,12 @@ entities:
       keywords: []
       usedBy: []
       dependencies: []
-`);
+`
+  );
 });
 
 afterAll(() => {
-  // Cleanup fixture files
-  const files = [VALID_REGISTRY_PATH, EMPTY_REGISTRY_PATH, MALFORMED_REGISTRY_PATH, DUPLICATES_REGISTRY_PATH, UNRESOLVED_DEPS_PATH];
-  for (const file of files) {
-    if (fs.existsSync(file)) fs.unlinkSync(file);
-  }
-  if (fs.existsSync(FIXTURES_DIR)) {
-    fs.rmSync(FIXTURES_DIR, { recursive: true, force: true });
-  }
+  removePathWithRetries(FIXTURES_DIR);
 });
 
 // --- Helper ---
@@ -344,7 +375,7 @@ describe('RegistryProvider — 5 Implemented Primitives', () => {
       expect(result).not.toBeNull();
       expect(result.length).toBeGreaterThan(0);
       // create-story depends on story-template
-      const paths = result.map(r => r.file);
+      const paths = result.map((r) => r.file);
       expect(paths).toContain('.aiox-core/development/tasks/create-story.md');
     });
 
@@ -366,7 +397,7 @@ describe('RegistryProvider — 5 Implemented Primitives', () => {
     test('includes resolved edges', async () => {
       const result = await provider.analyzeDependencies('create-story');
       expect(result).not.toBeNull();
-      const resolvedEdges = result.edges.filter(e => e.resolved === true);
+      const resolvedEdges = result.edges.filter((e) => e.resolved === true);
       expect(resolvedEdges.length).toBeGreaterThan(0);
     });
 
@@ -590,7 +621,7 @@ describe('RegistryProvider — Unresolved Dependencies', () => {
   test('marks unresolvable edges as resolved: false', async () => {
     const result = await provider.analyzeDependencies('task-a');
     expect(result).not.toBeNull();
-    const unresolvedEdges = result.edges.filter(e => e.resolved === false);
+    const unresolvedEdges = result.edges.filter((e) => e.resolved === false);
     expect(unresolvedEdges.length).toBe(2); // non-existent-entity, another-missing
   });
 
@@ -602,16 +633,16 @@ describe('RegistryProvider — Unresolved Dependencies', () => {
 
   test('resolved edges are marked as resolved: true', async () => {
     const result = await provider.analyzeDependencies('task-a');
-    const resolvedEdges = result.edges.filter(e => e.resolved === true);
+    const resolvedEdges = result.edges.filter((e) => e.resolved === true);
     // task-a depends on task-b which exists
     expect(resolvedEdges.length).toBeGreaterThan(0);
-    expect(resolvedEdges.some(e => e.to === 'task-b')).toBe(true);
+    expect(resolvedEdges.some((e) => e.to === 'task-b')).toBe(true);
   });
 
   test('graph traversal follows resolved deps', async () => {
     const result = await provider.analyzeDependencies('task-a');
     // Should include task-a, task-b (resolved dep), task-c (transitive dep from task-b)
-    const nodeNames = result.nodes.map(n => n.name);
+    const nodeNames = result.nodes.map((n) => n.name);
     expect(nodeNames).toContain('task-a');
     expect(nodeNames).toContain('task-b');
     expect(nodeNames).toContain('task-c');
@@ -745,7 +776,9 @@ describe('RegistryProvider — Cache Behavior', () => {
 
   test('registry reloaded when mtime changes', async () => {
     const tempPath = path.join(FIXTURES_DIR, 'mtime-test-registry.yaml');
-    fs.writeFileSync(tempPath, `
+    fs.writeFileSync(
+      tempPath,
+      `
 entities:
   tasks:
     task-v1:
@@ -756,7 +789,8 @@ entities:
       keywords: []
       usedBy: []
       dependencies: []
-`);
+`
+    );
 
     const provider = createProvider(tempPath);
     expect(provider.isAvailable()).toBe(true);
@@ -764,8 +798,10 @@ entities:
     expect(result1).not.toBeNull();
 
     // Wait a bit and modify file (ensure different mtime)
-    await new Promise(resolve => setTimeout(resolve, 100));
-    fs.writeFileSync(tempPath, `
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    fs.writeFileSync(
+      tempPath,
+      `
 entities:
   tasks:
     task-v2:
@@ -776,7 +812,8 @@ entities:
       keywords: []
       usedBy: []
       dependencies: []
-`);
+`
+    );
 
     // Should reload and find new entity
     const result2 = await provider.findDefinition('task-v2');
@@ -788,7 +825,7 @@ entities:
     expect(result3).toBeNull();
 
     // Cleanup
-    fs.unlinkSync(tempPath);
+    removePathWithRetries(tempPath);
   });
 });
 
@@ -836,7 +873,9 @@ describe('RegistryProvider — Performance', () => {
 describe('RegistryProvider — Edge Cases', () => {
   test('path traversal defense: entities with ".." in path are rejected', async () => {
     const traversalPath = path.join(FIXTURES_DIR, 'traversal-registry.yaml');
-    fs.writeFileSync(traversalPath, `
+    fs.writeFileSync(
+      traversalPath,
+      `
 entities:
   tasks:
     safe-entity:
@@ -855,7 +894,8 @@ entities:
       keywords: []
       usedBy: []
       dependencies: []
-`);
+`
+    );
 
     const provider = createProvider(traversalPath);
     expect(provider.isAvailable()).toBe(true);
@@ -868,7 +908,7 @@ entities:
     const evil = await provider.findDefinition('evil-entity');
     expect(evil).toBeNull();
 
-    fs.unlinkSync(traversalPath);
+    removePathWithRetries(traversalPath);
   });
 
   test('LAYER_PRIORITY export is correct', () => {
